@@ -81,6 +81,7 @@ python build.py
 - **Double-click (LMB)** on champion icon → Open champion selection window
 - **Left-click (LMB)** → Start/reset ultimate timer
 - **Right-click (RMB)** → Cycle ultimate level (6 → 11 → 16)
+  - Current level is displayed in champion name (e.g., "Lux (6)", "Ahri (11)")
 
 ### Summoner Spell Slots
 
@@ -186,7 +187,7 @@ Contributions are welcome! If you have suggestions or found a bug:
 
 - [x] Sound notifications when ultimate is ready
 - [x] Support for summoner spells
-- [ ] Compact mode (minimize UI for more screen space)
+- [x] Compact mode (level displayed in champion name)
 - [ ] Theme customization (custom colors/fonts)
 - [ ] Export/import settings (share configurations)
 
