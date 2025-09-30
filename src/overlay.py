@@ -9,6 +9,7 @@ import tkinter as tk
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import os
 import pygame
+import random
 
 from config import *
 from champion_data import champion_data, summoner_spell_data
@@ -872,6 +873,7 @@ class OverlayApp:
         self.drag_start_y = 0
 
         self._create_ui()
+        self._debug_populate_slots()
         self._setup_drag_and_drop()
         self._start_update_loop()
 
@@ -1021,6 +1023,28 @@ class OverlayApp:
 
             slot.on_double_click_callback = self._select_champion
             slot.on_summoner_spell_select_callback = self._select_summoner_spell
+
+    def _debug_populate_slots(self):
+        if not DEBUG_MODE:
+            return
+
+        all_champions = champion_data.get_champion_list()
+        all_spells = summoner_spell_data.get_spell_list()
+
+        if len(all_champions) < NUM_SLOTS:
+            return
+
+        selected_champions = random.sample(all_champions, NUM_SLOTS)
+
+        for slot_id, champion_name in enumerate(selected_champions):
+            if slot_id in self.slots:
+                self.slots[slot_id].set_champion(champion_name)
+
+                spell1 = random.choice(all_spells)
+                spell2 = random.choice(all_spells)
+
+                self.slots[slot_id].summoner_spell_slots[0].set_spell(spell1)
+                self.slots[slot_id].summoner_spell_slots[1].set_spell(spell2)
 
     def _toggle_layout(self):
         global LAYOUT

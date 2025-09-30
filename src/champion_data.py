@@ -8,7 +8,7 @@ and provides utilities for accessing champion icons.
 import json
 import os
 from typing import Dict, List, Optional
-from config import CHAMPIONS_DATA_PATH, ICONS_DIR, SUMMONER_SPELLS_DATA_PATH, SUMMONER_SPELLS_DIR
+from config import CHAMPIONS_DATA_PATH, ICONS_DIR, SUMMONER_SPELLS_DATA_PATH, SUMMONER_SPELLS_DIR, DEBUG_MODE, DEBUG_COOLDOWN
 
 
 class ChampionData:
@@ -49,6 +49,8 @@ class ChampionData:
         return cooldowns[level]
 
     def get_all_cooldowns(self, champion: str) -> Optional[List[float]]:
+        if DEBUG_MODE:
+            return [DEBUG_COOLDOWN, DEBUG_COOLDOWN, DEBUG_COOLDOWN]
         return self.cooldowns.get(champion)
 
     def get_icon_path(self, champion: str) -> Optional[str]:
@@ -124,6 +126,8 @@ class SummonerSpellData:
             self.spells = []
 
     def get_cooldown(self, spell: str) -> Optional[float]:
+        if DEBUG_MODE:
+            return DEBUG_COOLDOWN
         return self.cooldowns.get(spell)
 
     def get_icon_path(self, spell: str) -> Optional[str]:
