@@ -293,16 +293,6 @@ class ChampionSlot(tk.Frame):
                 self.summoner_spell_slots[i] = spell_slot
 
             self.canvas_image_id = None
-
-            self.level_label = tk.Label(
-                self,
-                text="Lvl 6",
-                font=("Arial", 8),
-                bg=OVERLAY_BG_COLOR,
-                fg="#888888",
-                height=1
-            )
-            self.level_label.pack()
         else:
             self.canvas = tk.Canvas(
                 self,
@@ -324,16 +314,6 @@ class ChampionSlot(tk.Frame):
                 spell_slot.pack(side=tk.LEFT, padx=(0, SUMMONER_SPELL_SPACING) if i == 0 else 0)
                 spell_slot.on_double_click_callback = self.on_summoner_spell_double_click
                 self.summoner_spell_slots[i] = spell_slot
-
-            self.level_label = tk.Label(
-                self,
-                text="Lvl 6",
-                font=("Arial", 8),
-                bg=OVERLAY_BG_COLOR,
-                fg="#888888",
-                height=1
-            )
-            self.level_label.pack()
 
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<Button-3>", self._on_right_click)
@@ -365,14 +345,11 @@ class ChampionSlot(tk.Frame):
             except Exception as e:
                 print(f"Error loading icon for {champion_name}: {e}")
 
-        display_name = champion_name
-        if len(display_name) > 10:
-            display_name = champion_name[:9] + "."
-        self.name_label.config(text=display_name)
-
         cooldowns = champion_data.get_all_cooldowns(champion_name)
         if cooldowns:
             self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns, on_ready_callback=self.app._play_ready_sound, alert_threshold=self.app.sound_alert_threshold)
+
+        self._update_level_display()
 
     def update_timer_display(self):
         if not self.base_image:
@@ -441,12 +418,28 @@ class ChampionSlot(tk.Frame):
             self.timer_manager.increment_level(self.slot_id)
             self._update_level_display()
 
-    def _update_level_display(self):
+    def _get_display_name_with_level(self):
+        if not self.champion:
+            return "Empty"
+
         timer = self.timer_manager.get_timer(self.slot_id)
-        if timer:
-            level_names = ["Lvl 6", "Lvl 11", "Lvl 16"]
-            if timer.level < len(level_names):
-                self.level_label.config(text=level_names[timer.level])
+        if not timer:
+            return self.champion
+
+        level_values = [6, 11, 16]
+        level = level_values[timer.level] if timer.level < len(level_values) else 6
+
+        display_name = self.champion
+        max_length = 10
+
+        if len(display_name) > max_length:
+            display_name = display_name[:max_length - 1] + "."
+
+        return f"{display_name} ({level})"
+
+    def _update_level_display(self):
+        display_name = self._get_display_name_with_level()
+        self.name_label.config(text=display_name)
 
     def _on_double_click(self, event):
         if self.app.locked:
