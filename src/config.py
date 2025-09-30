@@ -12,6 +12,8 @@ BORDER_COLOR = "#2a2a2a"
 ICON_SIZE = 64
 SLOT_SPACING = 5
 
+LAYOUT = "horizontal"
+
 TIMER_FONT = ("Arial", 18, "bold")
 TIMER_COLOR = "#ffffff"
 TIMER_OUTLINE_COLOR = "#000000"

@@ -268,7 +268,10 @@ class OverlayApp:
 
         for i in range(NUM_SLOTS):
             slot = ChampionSlot(main_frame, i, self.timer_manager)
-            slot.pack(pady=SLOT_SPACING)
+            if LAYOUT == "horizontal":
+                slot.pack(side=tk.LEFT, padx=SLOT_SPACING)
+            else:
+                slot.pack(pady=SLOT_SPACING)
             self.slots[i] = slot
 
             slot.on_double_click_callback = self._select_champion
