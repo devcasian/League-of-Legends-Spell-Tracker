@@ -60,6 +60,11 @@ SUMMONER_SPELLS_DATA_PATH = "data/summoner_spells_cooldowns.json"
 SUMMONER_SPELLS_DIR = "data/summoner spells"
 
 SOUND_FILE_PATH = "data/ult_ready.wav"
-SOUND_ALERT_THRESHOLD = 4
+SOUND_ALERT_THRESHOLD = 1
+SOUND_ENABLED = True
+SOUND_VOLUME = 1.0
+
+SETTINGS_BUTTON_SIZE = 24
+SETTINGS_BUTTON_COLOR = "#888888"
 
 SETTINGS_FILE = "settings.json"

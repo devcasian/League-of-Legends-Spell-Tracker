@@ -293,7 +293,7 @@ class ChampionSlot(tk.Frame):
 
         cooldowns = champion_data.get_all_cooldowns(champion_name)
         if cooldowns:
-            self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns, on_ready_callback=self.app._play_ready_sound)
+            self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns, on_ready_callback=self.app._play_ready_sound, alert_threshold=self.app.sound_alert_threshold)
 
     def update_timer_display(self):
         if not self.base_image:
@@ -414,25 +414,51 @@ class SummonerSpellSelector(tk.Toplevel):
         self.title("Select Summoner Spell")
         self.geometry("300x400")
         self.attributes("-topmost", True)
+        self.configure(bg=OVERLAY_BG_COLOR)
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self._on_search)
 
-        search_frame = tk.Frame(self)
-        search_frame.pack(fill=tk.X, padx=5, pady=5)
+        search_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+        search_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        tk.Label(search_frame, text="Search:").pack(side=tk.LEFT)
-        search_entry = tk.Entry(search_frame, textvariable=self.search_var)
+        tk.Label(
+            search_frame,
+            text="Search:",
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        search_entry = tk.Entry(
+            search_frame,
+            textvariable=self.search_var,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            insertbackground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 10)
+        )
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         search_entry.focus()
 
-        list_frame = tk.Frame(self)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        list_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
-        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar = tk.Scrollbar(list_frame, bg=OVERLAY_BG_COLOR, troughcolor="#2a2a2a")
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.spell_listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set)
+        self.spell_listbox = tk.Listbox(
+            list_frame,
+            yscrollcommand=scrollbar.set,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            selectbackground="#888888",
+            selectforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            highlightthickness=0
+        )
         self.spell_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.spell_listbox.yview)
 
@@ -442,11 +468,36 @@ class SummonerSpellSelector(tk.Toplevel):
         self.spell_listbox.bind("<Double-Button-1>", self._on_select)
         self.spell_listbox.bind("<Return>", self._on_select)
 
-        btn_frame = tk.Frame(self)
-        btn_frame.pack(fill=tk.X, padx=5, pady=5)
+        btn_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+        btn_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
 
-        tk.Button(btn_frame, text="Select", command=self._on_select).pack(side=tk.LEFT, padx=2)
-        tk.Button(btn_frame, text="Cancel", command=self.destroy).pack(side=tk.LEFT, padx=2)
+        tk.Button(
+            btn_frame,
+            text="Select",
+            command=self._on_select,
+            bg="#27ae60",
+            fg="#ffffff",
+            activebackground="#2ecc71",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2",
+            width=10
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        tk.Button(
+            btn_frame,
+            text="Cancel",
+            command=self.destroy,
+            bg="#e74c3c",
+            fg="#ffffff",
+            activebackground="#c0392b",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2",
+            width=10
+        ).pack(side=tk.LEFT)
 
     def _update_list(self, spells):
         self.spell_listbox.delete(0, tk.END)
@@ -477,25 +528,51 @@ class ChampionSelector(tk.Toplevel):
         self.title("Select Champion")
         self.geometry("300x400")
         self.attributes("-topmost", True)
+        self.configure(bg=OVERLAY_BG_COLOR)
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self._on_search)
 
-        search_frame = tk.Frame(self)
-        search_frame.pack(fill=tk.X, padx=5, pady=5)
+        search_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+        search_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        tk.Label(search_frame, text="Search:").pack(side=tk.LEFT)
-        search_entry = tk.Entry(search_frame, textvariable=self.search_var)
+        tk.Label(
+            search_frame,
+            text="Search:",
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        search_entry = tk.Entry(
+            search_frame,
+            textvariable=self.search_var,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            insertbackground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 10)
+        )
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         search_entry.focus()
 
-        list_frame = tk.Frame(self)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        list_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
-        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar = tk.Scrollbar(list_frame, bg=OVERLAY_BG_COLOR, troughcolor="#2a2a2a")
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.champion_listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set)
+        self.champion_listbox = tk.Listbox(
+            list_frame,
+            yscrollcommand=scrollbar.set,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            selectbackground="#888888",
+            selectforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            highlightthickness=0
+        )
         self.champion_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.champion_listbox.yview)
 
@@ -505,11 +582,36 @@ class ChampionSelector(tk.Toplevel):
         self.champion_listbox.bind("<Double-Button-1>", self._on_select)
         self.champion_listbox.bind("<Return>", self._on_select)
 
-        btn_frame = tk.Frame(self)
-        btn_frame.pack(fill=tk.X, padx=5, pady=5)
+        btn_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+        btn_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
 
-        tk.Button(btn_frame, text="Select", command=self._on_select).pack(side=tk.LEFT, padx=2)
-        tk.Button(btn_frame, text="Cancel", command=self.destroy).pack(side=tk.LEFT, padx=2)
+        tk.Button(
+            btn_frame,
+            text="Select",
+            command=self._on_select,
+            bg="#27ae60",
+            fg="#ffffff",
+            activebackground="#2ecc71",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2",
+            width=10
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        tk.Button(
+            btn_frame,
+            text="Cancel",
+            command=self.destroy,
+            bg="#e74c3c",
+            fg="#ffffff",
+            activebackground="#c0392b",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2",
+            width=10
+        ).pack(side=tk.LEFT)
 
     def _update_list(self, champions):
         self.champion_listbox.delete(0, tk.END)
@@ -527,6 +629,210 @@ class ChampionSelector(tk.Toplevel):
             self.selected_champion = self.champion_listbox.get(selection[0])
             self.callback(self.selected_champion)
             self.destroy()
+
+
+class SettingsDialog(tk.Toplevel):
+    """Settings dialog for sound configuration."""
+
+    def __init__(self, parent, app):
+        super().__init__(parent)
+        self.app = app
+
+        self.title("Settings")
+        self.geometry("320x240")
+        self.attributes("-topmost", True)
+        self.resizable(False, False)
+        self.configure(bg=OVERLAY_BG_COLOR)
+
+        self.sound_enabled_var = tk.BooleanVar(value=self.app.sound_enabled)
+        self.current_volume = int(self.app.sound_volume * 100)
+        self.current_alert_threshold = int(self.app.sound_alert_threshold)
+
+        main_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR, padx=20, pady=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        sound_check = tk.Checkbutton(
+            main_frame,
+            text="Enable sound",
+            variable=self.sound_enabled_var,
+            command=self._on_sound_toggle,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            selectcolor=OVERLAY_BG_COLOR,
+            activebackground=OVERLAY_BG_COLOR,
+            activeforeground=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        sound_check.pack(anchor=tk.W, pady=(0, 15))
+
+        volume_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        volume_frame.pack(fill=tk.X, pady=(0, 5))
+
+        tk.Label(
+            volume_frame,
+            text="Volume:",
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        ).pack(side=tk.LEFT)
+
+        self.volume_label = tk.Label(
+            volume_frame,
+            text=f"{self.current_volume}%",
+            width=5,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        self.volume_label.pack(side=tk.RIGHT)
+
+        slider_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        slider_frame.pack(fill=tk.X, pady=(0, 20))
+
+        self.volume_slider = tk.Scale(
+            slider_frame,
+            from_=0,
+            to=100,
+            orient=tk.HORIZONTAL,
+            showvalue=0,
+            command=self._on_volume_change,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            troughcolor="#2a2a2a",
+            activebackground="#888888",
+            highlightthickness=0,
+            length=200
+        )
+        self.volume_slider.set(self.current_volume)
+        self.volume_slider.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.test_btn = tk.Button(
+            slider_frame,
+            text="Play",
+            command=self._test_sound,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            activebackground="#3a3a3a",
+            activeforeground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 9),
+            cursor="hand2",
+            width=6
+        )
+        self.test_btn.pack(side=tk.LEFT, padx=(5, 0))
+
+        alert_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        alert_frame.pack(fill=tk.X, pady=(0, 5))
+
+        tk.Label(
+            alert_frame,
+            text="Alert before ready:",
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        ).pack(side=tk.LEFT)
+
+        self.alert_label = tk.Label(
+            alert_frame,
+            text=f"{self.current_alert_threshold}s",
+            width=5,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        self.alert_label.pack(side=tk.RIGHT)
+
+        self.alert_slider = tk.Scale(
+            main_frame,
+            from_=0,
+            to=5,
+            orient=tk.HORIZONTAL,
+            showvalue=0,
+            command=self._on_alert_change,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            troughcolor="#2a2a2a",
+            activebackground="#888888",
+            highlightthickness=0,
+            length=200
+        )
+        self.alert_slider.set(self.current_alert_threshold)
+        self.alert_slider.pack(fill=tk.X, pady=(0, 20))
+
+        self._update_slider_state()
+
+        btn_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        btn_frame.pack(fill=tk.X)
+
+        save_btn = tk.Button(
+            btn_frame,
+            text="Save",
+            command=self._on_save,
+            width=10,
+            bg="#27ae60",
+            fg="#ffffff",
+            activebackground="#2ecc71",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2"
+        )
+        save_btn.pack(side=tk.LEFT, padx=(0, 5))
+
+        cancel_btn = tk.Button(
+            btn_frame,
+            text="Cancel",
+            command=self.destroy,
+            width=10,
+            bg="#e74c3c",
+            fg="#ffffff",
+            activebackground="#c0392b",
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2"
+        )
+        cancel_btn.pack(side=tk.LEFT)
+
+    def _on_sound_toggle(self):
+        self._update_slider_state()
+
+    def _update_slider_state(self):
+        if self.sound_enabled_var.get():
+            self.volume_slider.config(state=tk.NORMAL)
+            self.test_btn.config(state=tk.NORMAL)
+        else:
+            self.volume_slider.config(state=tk.DISABLED)
+            self.test_btn.config(state=tk.DISABLED)
+
+    def _on_volume_change(self, value):
+        self.current_volume = int(float(value))
+        self.volume_label.config(text=f"{self.current_volume}%")
+
+    def _on_alert_change(self, value):
+        self.current_alert_threshold = int(float(value))
+        self.alert_label.config(text=f"{self.current_alert_threshold}s")
+
+    def _test_sound(self):
+        if self.app.ready_sound:
+            volume = self.current_volume / 100.0
+            self.app.ready_sound.set_volume(volume)
+            self.app.ready_sound.play()
+
+    def _on_save(self):
+        self.app.sound_enabled = self.sound_enabled_var.get()
+        self.app.sound_volume = self.current_volume / 100.0
+        self.app.sound_alert_threshold = self.current_alert_threshold
+        if self.app.ready_sound:
+            self.app.ready_sound.set_volume(self.app.sound_volume)
+
+        for timer in self.app.timer_manager.timers.values():
+            if timer:
+                timer.alert_threshold = self.app.sound_alert_threshold
+                timer.sound_played = False
+
+        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold)
+        self.destroy()
 
 
 class OverlayApp:
@@ -547,11 +853,15 @@ class OverlayApp:
         LAYOUT = settings.get("layout", LAYOUT)
 
         self.locked = settings.get("locked", False)
+        self.sound_enabled = settings.get("sound_enabled", SOUND_ENABLED)
+        self.sound_volume = settings.get("sound_volume", SOUND_VOLUME)
+        self.sound_alert_threshold = settings.get("sound_alert_threshold", SOUND_ALERT_THRESHOLD)
 
         pygame.mixer.init()
         self.ready_sound = None
         if os.path.exists(SOUND_FILE_PATH):
             self.ready_sound = pygame.mixer.Sound(SOUND_FILE_PATH)
+            self.ready_sound.set_volume(self.sound_volume)
 
         self.timer_manager = TimerManager()
         self.timer_manager.register_update_callback(self._update_all_timers)
@@ -619,6 +929,20 @@ class OverlayApp:
         self.lock_canvas.bind("<Enter>", lambda e: self._draw_lock_icon(self.lock_canvas, MENU_BUTTON_HOVER_COLOR))
         self.lock_canvas.bind("<Leave>", lambda e: self._draw_lock_icon(self.lock_canvas))
 
+        self.settings_canvas = tk.Canvas(
+            menu_frame,
+            width=SETTINGS_BUTTON_SIZE,
+            height=SETTINGS_BUTTON_SIZE,
+            bg=OVERLAY_BG_COLOR,
+            highlightthickness=0
+        )
+        self.settings_canvas.pack(side=tk.LEFT, padx=2, pady=2)
+
+        self._draw_settings_icon(self.settings_canvas)
+        self.settings_canvas.bind("<Button-1>", lambda e: self._open_settings())
+        self.settings_canvas.bind("<Enter>", lambda e: self._draw_settings_icon(self.settings_canvas, MENU_BUTTON_HOVER_COLOR))
+        self.settings_canvas.bind("<Leave>", lambda e: self._draw_settings_icon(self.settings_canvas))
+
         self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
         self.border_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -668,6 +992,24 @@ class OverlayApp:
             canvas.create_line(14, 8, 17, 8, fill=color, width=2)
             canvas.create_oval(11, 13, 13, 15, fill=color, outline=color)
 
+    def _draw_settings_icon(self, canvas, color=None):
+        canvas.delete("all")
+        if color is None:
+            color = SETTINGS_BUTTON_COLOR
+
+        canvas.create_oval(10, 10, 14, 14, outline=color, width=2)
+        for angle in range(0, 360, 90):
+            import math
+            rad = math.radians(angle)
+            x1 = 12 + math.cos(rad) * 4
+            y1 = 12 + math.sin(rad) * 4
+            x2 = 12 + math.cos(rad) * 6
+            y2 = 12 + math.sin(rad) * 6
+            canvas.create_line(x1, y1, x2, y2, fill=color, width=2)
+
+    def _open_settings(self):
+        SettingsDialog(self.root, self)
+
     def _create_slots(self):
         for i in range(NUM_SLOTS):
             slot = ChampionSlot(self.main_frame, i, self.timer_manager, self)
@@ -683,7 +1025,7 @@ class OverlayApp:
     def _toggle_layout(self):
         global LAYOUT
         LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
-        save_settings(LAYOUT)
+        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
 
         slot_states = {}
         for slot_id, slot in self.slots.items():
@@ -748,7 +1090,7 @@ class OverlayApp:
 
     def _toggle_lock(self):
         self.locked = not self.locked
-        save_settings(LAYOUT, locked=self.locked)
+        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
         self._draw_lock_icon(self.lock_canvas)
 
     def _setup_drag_and_drop(self):
@@ -776,7 +1118,7 @@ class OverlayApp:
         self.root.bind("<ButtonRelease-1>", stop_drag, add="+")
 
     def _play_ready_sound(self):
-        if self.ready_sound:
+        if self.ready_sound and self.sound_enabled:
             self.ready_sound.play()
 
     def _select_champion(self, slot_id: int):
@@ -808,13 +1150,13 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
 
     def _on_closing(self):
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
         self.root.destroy()
 
     def run(self):
