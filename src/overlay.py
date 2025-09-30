@@ -10,8 +10,12 @@ from PIL import Image, ImageTk, ImageDraw, ImageFont
 import os
 import pygame
 import random
+import threading
+import pystray
+from pystray import MenuItem as item
 
 from config import *
+from config import get_resource_path
 from champion_data import champion_data, summoner_spell_data
 from timer import TimerManager
 from settings import load_settings, save_settings
@@ -20,7 +24,7 @@ from settings import load_settings, save_settings
 def apply_ui_scale(scale):
     """Apply UI scale to all size-related constants."""
     global ICON_SIZE, SUMMONER_SPELL_SIZE, SLOT_SPACING, SUMMONER_SPELL_SPACING
-    global EMPTY_SLOT_BORDER_WIDTH, LAYOUT_TOGGLE_SIZE, PIN_BUTTON_SIZE, LOCK_BUTTON_SIZE, SETTINGS_BUTTON_SIZE
+    global EMPTY_SLOT_BORDER_WIDTH, LAYOUT_TOGGLE_SIZE, PIN_BUTTON_SIZE, LOCK_BUTTON_SIZE, SETTINGS_BUTTON_SIZE, CLOSE_BUTTON_SIZE
     global NAME_FONT, TIMER_FONT
 
     ICON_SIZE = int(64 * scale)
@@ -33,6 +37,7 @@ def apply_ui_scale(scale):
     PIN_BUTTON_SIZE = int(24 * scale)
     LOCK_BUTTON_SIZE = int(24 * scale)
     SETTINGS_BUTTON_SIZE = int(24 * scale)
+    CLOSE_BUTTON_SIZE = int(24 * scale)
 
     name_font_size = max(6, int(9 * scale))
     timer_font_size = max(10, int(18 * scale))
@@ -960,7 +965,7 @@ class OverlayApp:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("LoL Ult Tracker")
+        self.root.title("Spell Tracker")
 
         self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
@@ -993,6 +998,9 @@ class OverlayApp:
 
         self.drag_start_x = 0
         self.drag_start_y = 0
+
+        self.tray_icon = None
+        self._setup_tray_icon()
 
         self._create_ui()
         self._debug_populate_slots()
@@ -1067,6 +1075,20 @@ class OverlayApp:
         self.settings_canvas.bind("<Enter>", lambda e: self._draw_settings_icon(self.settings_canvas, MENU_BUTTON_HOVER_COLOR))
         self.settings_canvas.bind("<Leave>", lambda e: self._draw_settings_icon(self.settings_canvas))
 
+        self.close_canvas = tk.Canvas(
+            menu_frame,
+            width=CLOSE_BUTTON_SIZE,
+            height=CLOSE_BUTTON_SIZE,
+            bg=OVERLAY_BG_COLOR,
+            highlightthickness=0
+        )
+        self.close_canvas.pack(side=tk.LEFT, padx=2, pady=2)
+
+        self._draw_close_icon(self.close_canvas)
+        self.close_canvas.bind("<Button-1>", lambda e: self._quit_app())
+        self.close_canvas.bind("<Enter>", lambda e: self._draw_close_icon(self.close_canvas, "#e74c3c"))
+        self.close_canvas.bind("<Leave>", lambda e: self._draw_close_icon(self.close_canvas))
+
         self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
         self.border_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -1131,8 +1153,19 @@ class OverlayApp:
             y2 = 12 + math.sin(rad) * 6
             canvas.create_line(x1, y1, x2, y2, fill=color, width=2)
 
+    def _draw_close_icon(self, canvas, color=None):
+        canvas.delete("all")
+        if color is None:
+            color = CLOSE_BUTTON_COLOR
+
+        canvas.create_line(7, 7, 17, 17, fill=color, width=2)
+        canvas.create_line(17, 7, 7, 17, fill=color, width=2)
+
     def _open_settings(self):
         SettingsDialog(self.root, self)
+
+    def _quit_app(self):
+        self._exit_app()
 
     def _create_slots(self):
         for i in range(NUM_SLOTS):
@@ -1360,11 +1393,43 @@ class OverlayApp:
         position = {"x": x, "y": y}
         save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
 
+    def _setup_tray_icon(self):
+        logo_path = get_resource_path("data/logo.ico")
+        if os.path.exists(logo_path):
+            tray_image = Image.open(logo_path)
+        else:
+            tray_image = Image.new('RGB', (64, 64), color='#0a0a0a')
+            draw = ImageDraw.Draw(tray_image)
+            draw.rectangle([16, 16, 48, 48], fill='#27ae60')
+
+        menu = pystray.Menu(
+            item('Show/Hide', self._toggle_window_visibility),
+            item('Exit', self._exit_app)
+        )
+
+        self.tray_icon = pystray.Icon("spell_tracker", tray_image, "Spell Tracker", menu)
+
+        tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
+        tray_thread.start()
+
+    def _toggle_window_visibility(self):
+        if self.root.winfo_viewable():
+            self.root.withdraw()
+        else:
+            self.root.deiconify()
+
+    def _exit_app(self):
+        if self.tray_icon:
+            self.tray_icon.stop()
+        self._on_closing()
+
     def _on_closing(self):
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
         save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
+        if self.tray_icon:
+            self.tray_icon.stop()
         self.root.destroy()
 
     def run(self):

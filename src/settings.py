@@ -6,16 +6,31 @@ This module handles saving and loading user preferences.
 
 import json
 import os
-from config import SETTINGS_FILE, LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE
+from pathlib import Path
+from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION
+
+
+def get_settings_path():
+    """Get the settings file path in AppData directory."""
+    if os.name == 'nt':
+        app_data = os.getenv('APPDATA')
+        settings_dir = Path(app_data) / 'SpellTracker'
+    else:
+        settings_dir = Path.home() / '.config' / 'spell-tracker'
+
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    return settings_dir / 'settings.json'
 
 
 def load_settings():
     """Load user settings from JSON file."""
-    if not os.path.exists(SETTINGS_FILE):
+    settings_file = get_settings_path()
+
+    if not settings_file.exists():
         return {
             "layout": LAYOUT,
-            "position": None,
-            "locked": False,
+            "position": DEFAULT_POSITION,
+            "locked": DEFAULT_LOCKED,
             "sound_enabled": SOUND_ENABLED,
             "sound_volume": SOUND_VOLUME,
             "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
@@ -23,12 +38,12 @@ def load_settings():
         }
 
     try:
-        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+        with open(settings_file, 'r', encoding='utf-8') as f:
             settings = json.load(f)
             if "position" not in settings:
-                settings["position"] = None
+                settings["position"] = DEFAULT_POSITION
             if "locked" not in settings:
-                settings["locked"] = False
+                settings["locked"] = DEFAULT_LOCKED
             if "sound_enabled" not in settings:
                 settings["sound_enabled"] = SOUND_ENABLED
             if "sound_volume" not in settings:
@@ -41,8 +56,8 @@ def load_settings():
     except (json.JSONDecodeError, IOError):
         return {
             "layout": LAYOUT,
-            "position": None,
-            "locked": False,
+            "position": DEFAULT_POSITION,
+            "locked": DEFAULT_LOCKED,
             "sound_enabled": SOUND_ENABLED,
             "sound_volume": SOUND_VOLUME,
             "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
@@ -52,6 +67,7 @@ def load_settings():
 
 def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None):
     """Save user settings to JSON file."""
+    settings_file = get_settings_path()
     current_settings = load_settings()
     current_settings["layout"] = layout
     if position is not None:
@@ -68,7 +84,7 @@ def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_
         current_settings["ui_scale"] = ui_scale
 
     try:
-        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        with open(settings_file, 'w', encoding='utf-8') as f:
             json.dump(current_settings, f, indent=2)
     except IOError as e:
         print(f"Error saving settings: {e}")

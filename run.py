@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-League of Legends Ultimate Cooldown Tracker
+League of Legends Spell Tracker
 Entry point for the application.
 """
 

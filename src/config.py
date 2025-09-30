@@ -5,6 +5,20 @@ This module contains all configurable parameters for the overlay application,
 including visual settings, UI colors, and file paths.
 """
 
+import sys
+import os
+from pathlib import Path
+
+
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = Path(__file__).parent.parent
+
+    return os.path.join(base_path, relative_path)
+
 OVERLAY_ALPHA = 0.95
 OVERLAY_BG_COLOR = "#0a0a0a"
 BORDER_COLOR = "#2a2a2a"
@@ -53,13 +67,13 @@ PULSE_DURATION = 5
 
 MENU_BUTTON_HOVER_COLOR = "#aaaaaa"
 
-CHAMPIONS_DATA_PATH = "data/champions_ult_cooldowns.json"
-ICONS_DIR = "data/champion_icons"
+CHAMPIONS_DATA_PATH = get_resource_path("data/champions_ult_cooldowns.json")
+ICONS_DIR = get_resource_path("data/champion_icons")
 
-SUMMONER_SPELLS_DATA_PATH = "data/summoner_spells_cooldowns.json"
-SUMMONER_SPELLS_DIR = "data/summoner spells"
+SUMMONER_SPELLS_DATA_PATH = get_resource_path("data/summoner_spells_cooldowns.json")
+SUMMONER_SPELLS_DIR = get_resource_path("data/summoner spells")
 
-SOUND_FILE_PATH = "data/ult_ready.wav"
+SOUND_FILE_PATH = get_resource_path("data/ult_ready.wav")
 SOUND_ALERT_THRESHOLD = 1
 SOUND_ENABLED = True
 SOUND_VOLUME = 1.0
@@ -67,12 +81,16 @@ SOUND_VOLUME = 1.0
 SETTINGS_BUTTON_SIZE = 24
 SETTINGS_BUTTON_COLOR = "#888888"
 
-DEBUG_MODE = True
+CLOSE_BUTTON_SIZE = 24
+CLOSE_BUTTON_COLOR = "#888888"
+
+DEBUG_MODE = False
 DEBUG_COOLDOWN = 10
 
-UI_SCALE = 1.0
+UI_SCALE = 1.1
 UI_SCALE_MIN = 0.5
 UI_SCALE_MAX = 2.0
 UI_SCALE_STEP = 0.1
 
-SETTINGS_FILE = "settings.json"
+DEFAULT_POSITION = {'x': 848, 'y': 730}
+DEFAULT_LOCKED = False
