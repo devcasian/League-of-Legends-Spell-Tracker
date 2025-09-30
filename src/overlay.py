@@ -435,15 +435,18 @@ class ChampionSlot(tk.Frame):
 class SummonerSpellSelector(tk.Toplevel):
     """Summoner spell selection dialog."""
 
-    def __init__(self, parent, callback):
+    def __init__(self, parent, callback, cleanup_callback=None):
         super().__init__(parent)
         self.callback = callback
+        self.cleanup_callback = cleanup_callback
         self.selected_spell = None
 
         self.title("Select Summoner Spell")
         self.geometry("300x400")
         self.attributes("-topmost", True)
         self.configure(bg=OVERLAY_BG_COLOR)
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self._on_search)
@@ -538,26 +541,36 @@ class SummonerSpellSelector(tk.Toplevel):
         filtered = [s for s in self.all_spells if search_term in s.lower()]
         self._update_list(filtered)
 
+    def _on_close(self):
+        if self.cleanup_callback:
+            self.cleanup_callback()
+        self.destroy()
+
     def _on_select(self, event=None):
         selection = self.spell_listbox.curselection()
         if selection:
             self.selected_spell = self.spell_listbox.get(selection[0])
             self.callback(self.selected_spell)
+            if self.cleanup_callback:
+                self.cleanup_callback()
             self.destroy()
 
 
 class ChampionSelector(tk.Toplevel):
     """Champion selection dialog."""
 
-    def __init__(self, parent, callback):
+    def __init__(self, parent, callback, cleanup_callback=None):
         super().__init__(parent)
         self.callback = callback
+        self.cleanup_callback = cleanup_callback
         self.selected_champion = None
 
         self.title("Select Champion")
         self.geometry("300x400")
         self.attributes("-topmost", True)
         self.configure(bg=OVERLAY_BG_COLOR)
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self._on_search)
@@ -652,11 +665,18 @@ class ChampionSelector(tk.Toplevel):
         filtered = [c for c in self.all_champions if search_term in c.lower()]
         self._update_list(filtered)
 
+    def _on_close(self):
+        if self.cleanup_callback:
+            self.cleanup_callback()
+        self.destroy()
+
     def _on_select(self, event=None):
         selection = self.champion_listbox.curselection()
         if selection:
             self.selected_champion = self.champion_listbox.get(selection[0])
             self.callback(self.selected_champion)
+            if self.cleanup_callback:
+                self.cleanup_callback()
             self.destroy()
 
 
@@ -672,6 +692,8 @@ class SettingsDialog(tk.Toplevel):
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self.sound_enabled_var = tk.BooleanVar(value=self.app.sound_enabled)
         self.current_volume = int(self.app.sound_volume * 100)
@@ -943,6 +965,10 @@ class SettingsDialog(tk.Toplevel):
         self.app._apply_scale_change()
         self.app.root.after(50, self.app._open_settings)
 
+    def _on_close(self):
+        self.app.settings_dialog = None
+        self.destroy()
+
     def _on_save(self):
         self.app.sound_enabled = self.sound_enabled_var.get()
         self.app.sound_volume = self.current_volume / 100.0
@@ -957,6 +983,7 @@ class SettingsDialog(tk.Toplevel):
                 timer.sound_played = False
 
         save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale)
+        self.app.settings_dialog = None
         self.destroy()
 
 
@@ -998,6 +1025,10 @@ class OverlayApp:
 
         self.drag_start_x = 0
         self.drag_start_y = 0
+
+        self.settings_dialog = None
+        self.champion_selector = None
+        self.summoner_spell_selector = None
 
         self.tray_icon = None
         self._setup_tray_icon()
@@ -1162,7 +1193,12 @@ class OverlayApp:
         canvas.create_line(17, 7, 7, 17, fill=color, width=2)
 
     def _open_settings(self):
-        SettingsDialog(self.root, self)
+        if self.settings_dialog and self.settings_dialog.winfo_exists():
+            self.settings_dialog.lift()
+            self.settings_dialog.focus_force()
+            return
+
+        self.settings_dialog = SettingsDialog(self.root, self)
 
     def _quit_app(self):
         self._exit_app()
@@ -1363,19 +1399,35 @@ class OverlayApp:
             self.ready_sound.play()
 
     def _select_champion(self, slot_id: int):
+        if self.champion_selector and self.champion_selector.winfo_exists():
+            self.champion_selector.lift()
+            self.champion_selector.focus_force()
+            return
+
         def on_selected(champion_name):
             self.slots[slot_id].set_champion(champion_name)
 
-        ChampionSelector(self.root, on_selected)
+        def on_cleanup():
+            self.champion_selector = None
+
+        self.champion_selector = ChampionSelector(self.root, on_selected, on_cleanup)
 
     def _select_summoner_spell(self, slot_id: int, spell_slot: int):
+        if self.summoner_spell_selector and self.summoner_spell_selector.winfo_exists():
+            self.summoner_spell_selector.lift()
+            self.summoner_spell_selector.focus_force()
+            return
+
         def on_selected(spell_name):
             if slot_id in self.slots:
                 spell_slot_widget = self.slots[slot_id].summoner_spell_slots.get(spell_slot)
                 if spell_slot_widget:
                     spell_slot_widget.set_spell(spell_name)
 
-        SummonerSpellSelector(self.root, on_selected)
+        def on_cleanup():
+            self.summoner_spell_selector = None
+
+        self.summoner_spell_selector = SummonerSpellSelector(self.root, on_selected, on_cleanup)
 
     def _update_all_timers(self):
         for slot in self.slots.values():
