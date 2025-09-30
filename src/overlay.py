@@ -32,7 +32,8 @@ class SummonerSpellSlot(tk.Frame):
             width=SUMMONER_SPELL_SIZE,
             height=SUMMONER_SPELL_SIZE,
             bg=OVERLAY_BG_COLOR,
-            highlightthickness=0
+            highlightthickness=EMPTY_SLOT_BORDER_WIDTH,
+            highlightbackground=EMPTY_SLOT_BORDER_COLOR
         )
         self.canvas.pack()
 
@@ -58,6 +59,8 @@ class SummonerSpellSlot(tk.Frame):
                     SUMMONER_SPELL_SIZE // 2, SUMMONER_SPELL_SIZE // 2,
                     image=self.photo_image
                 )
+
+                self.canvas.config(highlightthickness=0)
             except Exception as e:
                 print(f"Error loading icon for {spell_name}: {e}")
 
@@ -162,7 +165,8 @@ class ChampionSlot(tk.Frame):
                 width=ICON_SIZE,
                 height=ICON_SIZE,
                 bg=OVERLAY_BG_COLOR,
-                highlightthickness=0
+                highlightthickness=EMPTY_SLOT_BORDER_WIDTH,
+                highlightbackground=EMPTY_SLOT_BORDER_COLOR
             )
             self.canvas.pack(side=tk.LEFT)
 
@@ -174,27 +178,49 @@ class ChampionSlot(tk.Frame):
                 spell_slot.pack(pady=(0, SUMMONER_SPELL_SPACING) if i == 0 else 0)
                 spell_slot.on_double_click_callback = self.on_summoner_spell_double_click
                 self.summoner_spell_slots[i] = spell_slot
+
+            self.canvas_image_id = None
+
+            self.level_label = tk.Label(
+                self,
+                text="Lvl 6",
+                font=("Arial", 8),
+                bg=OVERLAY_BG_COLOR,
+                fg="#888888",
+                height=1
+            )
+            self.level_label.pack()
         else:
             self.canvas = tk.Canvas(
                 self,
                 width=ICON_SIZE,
                 height=ICON_SIZE,
                 bg=OVERLAY_BG_COLOR,
-                highlightthickness=0
+                highlightthickness=EMPTY_SLOT_BORDER_WIDTH,
+                highlightbackground=EMPTY_SLOT_BORDER_COLOR
             )
             self.canvas.pack()
 
-        self.canvas_image_id = None
+            self.canvas_image_id = None
 
-        self.level_label = tk.Label(
-            self,
-            text="Lvl 6",
-            font=("Arial", 8),
-            bg=OVERLAY_BG_COLOR,
-            fg="#888888",
-            height=1
-        )
-        self.level_label.pack()
+            spells_container = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+            spells_container.pack(pady=(2, 0))
+
+            for i in range(2):
+                spell_slot = SummonerSpellSlot(spells_container, self.slot_id, i, self.timer_manager)
+                spell_slot.pack(side=tk.LEFT, padx=(0, SUMMONER_SPELL_SPACING) if i == 0 else 0)
+                spell_slot.on_double_click_callback = self.on_summoner_spell_double_click
+                self.summoner_spell_slots[i] = spell_slot
+
+            self.level_label = tk.Label(
+                self,
+                text="Lvl 6",
+                font=("Arial", 8),
+                bg=OVERLAY_BG_COLOR,
+                fg="#888888",
+                height=1
+            )
+            self.level_label.pack()
 
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<Button-3>", self._on_right_click)
@@ -221,6 +247,8 @@ class ChampionSlot(tk.Frame):
                     ICON_SIZE // 2, ICON_SIZE // 2,
                     image=self.photo_image
                 )
+
+                self.canvas.config(highlightthickness=0)
             except Exception as e:
                 print(f"Error loading icon for {champion_name}: {e}")
 
@@ -309,9 +337,8 @@ class ChampionSlot(tk.Frame):
             self.on_double_click_callback(self.slot_id)
 
     def update_summoner_spell_displays(self):
-        if LAYOUT == "vertical":
-            for spell_slot in self.summoner_spell_slots.values():
-                spell_slot.update_timer_display()
+        for spell_slot in self.summoner_spell_slots.values():
+            spell_slot.update_timer_display()
 
 
 class SummonerSpellSelector(tk.Toplevel):
@@ -516,7 +543,7 @@ class OverlayApp:
 
     def _select_summoner_spell(self, slot_id: int, spell_slot: int):
         def on_selected(spell_name):
-            if LAYOUT == "vertical" and slot_id in self.slots:
+            if slot_id in self.slots:
                 spell_slot_widget = self.slots[slot_id].summoner_spell_slots.get(spell_slot)
                 if spell_slot_widget:
                     spell_slot_widget.set_spell(spell_name)
@@ -527,8 +554,7 @@ class OverlayApp:
         for slot in self.slots.values():
             slot.update_timer_display()
             slot._update_level_display()
-            if LAYOUT == "vertical":
-                slot.update_summoner_spell_displays()
+            slot.update_summoner_spell_displays()
 
     def _start_update_loop(self):
         self._update_all_timers()
