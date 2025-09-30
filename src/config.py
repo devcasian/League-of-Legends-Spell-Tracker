@@ -12,7 +12,10 @@ BORDER_COLOR = "#2a2a2a"
 ICON_SIZE = 64
 SLOT_SPACING = 5
 
-LAYOUT = "horizontal"
+SUMMONER_SPELL_SIZE = 30
+SUMMONER_SPELL_SPACING = 2
+
+LAYOUT = "vertical"
 
 TIMER_FONT = ("Arial", 18, "bold")
 TIMER_COLOR = "#ffffff"
@@ -31,3 +34,6 @@ COOLDOWN_COLOR = "#e67e22"
 
 CHAMPIONS_DATA_PATH = "data/champions_ult_cooldowns.json"
 ICONS_DIR = "data/champion_icons"
+
+SUMMONER_SPELLS_DATA_PATH = "data/summoner_spells_cooldowns.json"
+SUMMONER_SPELLS_DIR = "data/summoner spells"

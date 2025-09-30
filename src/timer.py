@@ -70,10 +70,62 @@ class CooldownTimer:
 
         if remaining >= 60:
             minutes = int(remaining // 60)
-            seconds = remaining % 60
-            return f"{minutes}:{seconds:04.1f}"
+            seconds = int(remaining % 60)
+            return f"{minutes}:{seconds:02d}"
         else:
-            return f"{remaining:.1f}"
+            return f"{int(remaining)}"
+
+
+class SummonerSpellTimer:
+    """
+    Manages a single summoner spell cooldown timer.
+
+    Tracks cooldown state and remaining time for a summoner spell.
+    """
+
+    def __init__(self, spell: str, cooldown: float):
+        self.spell = spell
+        self.cooldown = cooldown
+        self.start_time: Optional[float] = None
+        self.is_active = False
+
+    def start(self):
+        if not self.is_active:
+            self.start_time = time.time()
+            self.is_active = True
+
+    def reset(self):
+        self.start_time = None
+        self.is_active = False
+
+    def get_remaining_time(self) -> float:
+        if not self.is_active or self.start_time is None:
+            return 0.0
+
+        elapsed = time.time() - self.start_time
+        remaining = self.cooldown - elapsed
+
+        if remaining <= 0:
+            self.reset()
+            return 0.0
+
+        return remaining
+
+    def is_ready(self) -> bool:
+        return not self.is_active or self.get_remaining_time() <= 0
+
+    def format_time(self) -> str:
+        if self.is_ready():
+            return "Ready"
+
+        remaining = self.get_remaining_time()
+
+        if remaining >= 60:
+            minutes = int(remaining // 60)
+            seconds = int(remaining % 60)
+            return f"{minutes}:{seconds:02d}"
+        else:
+            return f"{int(remaining)}"
 
 
 class TimerManager:
@@ -81,6 +133,7 @@ class TimerManager:
 
     def __init__(self):
         self.timers: dict[int, Optional[CooldownTimer]] = {}
+        self.summoner_spell_timers: dict[tuple[int, int], Optional[SummonerSpellTimer]] = {}
         self.update_callbacks: list[Callable] = []
 
     def create_timer(self, slot: int, champion: str, cooldowns: list[float], level: int = 0):
@@ -126,3 +179,26 @@ class TimerManager:
 
     def update(self):
         self._notify_update()
+
+    def create_summoner_spell_timer(self, slot: int, spell_slot: int, spell: str, cooldown: float):
+        self.summoner_spell_timers[(slot, spell_slot)] = SummonerSpellTimer(spell, cooldown)
+
+    def remove_summoner_spell_timer(self, slot: int, spell_slot: int):
+        key = (slot, spell_slot)
+        if key in self.summoner_spell_timers:
+            del self.summoner_spell_timers[key]
+
+    def get_summoner_spell_timer(self, slot: int, spell_slot: int) -> Optional[SummonerSpellTimer]:
+        return self.summoner_spell_timers.get((slot, spell_slot))
+
+    def start_summoner_spell_timer(self, slot: int, spell_slot: int):
+        timer = self.get_summoner_spell_timer(slot, spell_slot)
+        if timer:
+            timer.start()
+            self._notify_update()
+
+    def reset_summoner_spell_timer(self, slot: int, spell_slot: int):
+        timer = self.get_summoner_spell_timer(slot, spell_slot)
+        if timer:
+            timer.reset()
+            self._notify_update()

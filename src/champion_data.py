@@ -8,7 +8,7 @@ and provides utilities for accessing champion icons.
 import json
 import os
 from typing import Dict, List, Optional
-from config import CHAMPIONS_DATA_PATH, ICONS_DIR
+from config import CHAMPIONS_DATA_PATH, ICONS_DIR, SUMMONER_SPELLS_DATA_PATH, SUMMONER_SPELLS_DIR
 
 
 class ChampionData:
@@ -92,4 +92,49 @@ class ChampionData:
         return self.champions.copy()
 
 
+class SummonerSpellData:
+    """
+    Manages summoner spell cooldown data and icon paths.
+
+    Loads summoner spell cooldown data from JSON file and provides
+    methods to access cooldowns and icon file paths for all summoner spells.
+    """
+
+    def __init__(self):
+        self.cooldowns: Dict[str, float] = {}
+        self.spells: List[str] = []
+        self._load_data()
+
+    def _load_data(self):
+        try:
+            with open(SUMMONER_SPELLS_DATA_PATH, 'r', encoding='utf-8') as f:
+                self.cooldowns = json.load(f)
+
+            self.spells = sorted([
+                spell for spell, cd in self.cooldowns.items()
+                if cd is not None
+            ])
+
+            print(f"Loaded {len(self.spells)} summoner spells")
+        except FileNotFoundError:
+            print(f"Error: {SUMMONER_SPELLS_DATA_PATH} not found")
+            self.spells = []
+        except json.JSONDecodeError:
+            print(f"Error: Failed to parse {SUMMONER_SPELLS_DATA_PATH}")
+            self.spells = []
+
+    def get_cooldown(self, spell: str) -> Optional[float]:
+        return self.cooldowns.get(spell)
+
+    def get_icon_path(self, spell: str) -> Optional[str]:
+        icon_path = os.path.join(SUMMONER_SPELLS_DIR, f"{spell}.png")
+        if os.path.exists(icon_path):
+            return icon_path
+        return None
+
+    def get_spell_list(self) -> List[str]:
+        return self.spells.copy()
+
+
 champion_data = ChampionData()
+summoner_spell_data = SummonerSpellData()

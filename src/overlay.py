@@ -10,8 +10,122 @@ from PIL import Image, ImageTk, ImageDraw, ImageFont
 import os
 
 from config import *
-from champion_data import champion_data
+from champion_data import champion_data, summoner_spell_data
 from timer import TimerManager
+
+
+class SummonerSpellSlot(tk.Frame):
+    """Widget representing a single summoner spell slot with icon and timer overlay."""
+
+    def __init__(self, parent, slot_id: int, spell_slot: int, timer_manager: TimerManager):
+        super().__init__(parent, bg=OVERLAY_BG_COLOR)
+        self.slot_id = slot_id
+        self.spell_slot = spell_slot
+        self.timer_manager = timer_manager
+        self.spell = None
+        self.base_image = None
+        self.photo_image = None
+        self.on_double_click_callback = None
+
+        self.canvas = tk.Canvas(
+            self,
+            width=SUMMONER_SPELL_SIZE,
+            height=SUMMONER_SPELL_SIZE,
+            bg=OVERLAY_BG_COLOR,
+            highlightthickness=0
+        )
+        self.canvas.pack()
+
+        self.canvas_image_id = None
+
+        self.canvas.bind("<Button-1>", self._on_click)
+        self.canvas.bind("<Double-Button-1>", self._on_double_click)
+
+    def set_spell(self, spell_name: str):
+        self.spell = spell_name
+
+        icon_path = summoner_spell_data.get_icon_path(spell_name)
+        if icon_path and os.path.exists(icon_path):
+            try:
+                img = Image.open(icon_path).convert("RGBA")
+                img = img.resize((SUMMONER_SPELL_SIZE, SUMMONER_SPELL_SIZE), Image.Resampling.LANCZOS)
+                self.base_image = img
+                self.photo_image = ImageTk.PhotoImage(img)
+
+                if self.canvas_image_id:
+                    self.canvas.delete(self.canvas_image_id)
+                self.canvas_image_id = self.canvas.create_image(
+                    SUMMONER_SPELL_SIZE // 2, SUMMONER_SPELL_SIZE // 2,
+                    image=self.photo_image
+                )
+            except Exception as e:
+                print(f"Error loading icon for {spell_name}: {e}")
+
+        cooldown = summoner_spell_data.get_cooldown(spell_name)
+        if cooldown:
+            self.timer_manager.create_summoner_spell_timer(self.slot_id, self.spell_slot, spell_name, cooldown)
+
+    def update_timer_display(self):
+        if not self.base_image:
+            return
+
+        timer = self.timer_manager.get_summoner_spell_timer(self.slot_id, self.spell_slot)
+        if not timer:
+            return
+
+        img = self.base_image.copy()
+
+        if not timer.is_ready():
+            overlay = Image.new('RGBA', img.size, (0, 0, 0, 150))
+            img = Image.alpha_composite(img, overlay)
+
+            draw = ImageDraw.Draw(img)
+
+            remaining = timer.get_remaining_time()
+            if remaining >= 60:
+                minutes = int(remaining // 60)
+                seconds = int(remaining % 60)
+                text = f"{minutes}:{seconds:02d}"
+            else:
+                text = f"{int(remaining)}"
+
+            try:
+                font = ImageFont.truetype("arial.ttf", 12)
+            except:
+                try:
+                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
+                except:
+                    font = ImageFont.load_default()
+
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            x = (SUMMONER_SPELL_SIZE - text_width) // 2
+            y = (SUMMONER_SPELL_SIZE - text_height) // 2
+
+            outline_color = TIMER_OUTLINE_COLOR
+            for adj_x in [-1, 0, 1]:
+                for adj_y in [-1, 0, 1]:
+                    draw.text((x + adj_x, y + adj_y), text, font=font, fill=outline_color)
+
+            draw.text((x, y), text, font=font, fill=COOLDOWN_COLOR)
+
+        self.photo_image = ImageTk.PhotoImage(img)
+        if self.canvas_image_id:
+            self.canvas.itemconfig(self.canvas_image_id, image=self.photo_image)
+
+    def _on_click(self, event):
+        timer = self.timer_manager.get_summoner_spell_timer(self.slot_id, self.spell_slot)
+        if timer:
+            if timer.is_ready():
+                self.timer_manager.start_summoner_spell_timer(self.slot_id, self.spell_slot)
+            else:
+                self.timer_manager.reset_summoner_spell_timer(self.slot_id, self.spell_slot)
+
+    def _on_double_click(self, event):
+        if self.on_double_click_callback:
+            self.on_double_click_callback(self.slot_id, self.spell_slot)
 
 
 class ChampionSlot(tk.Frame):
@@ -24,6 +138,7 @@ class ChampionSlot(tk.Frame):
         self.champion = None
         self.base_image = None
         self.photo_image = None
+        self.summoner_spell_slots = {}
 
         self._create_widgets()
 
@@ -38,14 +153,36 @@ class ChampionSlot(tk.Frame):
         )
         self.name_label.pack()
 
-        self.canvas = tk.Canvas(
-            self,
-            width=ICON_SIZE,
-            height=ICON_SIZE,
-            bg=OVERLAY_BG_COLOR,
-            highlightthickness=0
-        )
-        self.canvas.pack()
+        if LAYOUT == "vertical":
+            main_container = tk.Frame(self, bg=OVERLAY_BG_COLOR)
+            main_container.pack()
+
+            self.canvas = tk.Canvas(
+                main_container,
+                width=ICON_SIZE,
+                height=ICON_SIZE,
+                bg=OVERLAY_BG_COLOR,
+                highlightthickness=0
+            )
+            self.canvas.pack(side=tk.LEFT)
+
+            spells_container = tk.Frame(main_container, bg=OVERLAY_BG_COLOR)
+            spells_container.pack(side=tk.LEFT, padx=(3, 0))
+
+            for i in range(2):
+                spell_slot = SummonerSpellSlot(spells_container, self.slot_id, i, self.timer_manager)
+                spell_slot.pack(pady=(0, SUMMONER_SPELL_SPACING) if i == 0 else 0)
+                spell_slot.on_double_click_callback = self.on_summoner_spell_double_click
+                self.summoner_spell_slots[i] = spell_slot
+        else:
+            self.canvas = tk.Canvas(
+                self,
+                width=ICON_SIZE,
+                height=ICON_SIZE,
+                bg=OVERLAY_BG_COLOR,
+                highlightthickness=0
+            )
+            self.canvas.pack()
 
         self.canvas_image_id = None
 
@@ -62,6 +199,10 @@ class ChampionSlot(tk.Frame):
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<Button-3>", self._on_right_click)
         self.canvas.bind("<Double-Button-1>", self._on_double_click)
+
+    def on_summoner_spell_double_click(self, slot_id: int, spell_slot: int):
+        if hasattr(self, 'on_summoner_spell_select_callback') and self.on_summoner_spell_select_callback:
+            self.on_summoner_spell_select_callback(slot_id, spell_slot)
 
     def set_champion(self, champion_name: str):
         self.champion = champion_name
@@ -111,10 +252,10 @@ class ChampionSlot(tk.Frame):
             remaining = timer.get_remaining_time()
             if remaining >= 60:
                 minutes = int(remaining // 60)
-                seconds = remaining % 60
-                text = f"{minutes}:{seconds:04.1f}"
+                seconds = int(remaining % 60)
+                text = f"{minutes}:{seconds:02d}"
             else:
-                text = f"{remaining:.1f}"
+                text = f"{int(remaining)}"
 
             try:
                 font = ImageFont.truetype("arial.ttf", 24)
@@ -166,6 +307,74 @@ class ChampionSlot(tk.Frame):
     def _on_double_click(self, event):
         if hasattr(self, 'on_double_click_callback') and self.on_double_click_callback:
             self.on_double_click_callback(self.slot_id)
+
+    def update_summoner_spell_displays(self):
+        if LAYOUT == "vertical":
+            for spell_slot in self.summoner_spell_slots.values():
+                spell_slot.update_timer_display()
+
+
+class SummonerSpellSelector(tk.Toplevel):
+    """Summoner spell selection dialog."""
+
+    def __init__(self, parent, callback):
+        super().__init__(parent)
+        self.callback = callback
+        self.selected_spell = None
+
+        self.title("Select Summoner Spell")
+        self.geometry("300x400")
+        self.attributes("-topmost", True)
+
+        self.search_var = tk.StringVar()
+        self.search_var.trace("w", self._on_search)
+
+        search_frame = tk.Frame(self)
+        search_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        tk.Label(search_frame, text="Search:").pack(side=tk.LEFT)
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var)
+        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        search_entry.focus()
+
+        list_frame = tk.Frame(self)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.spell_listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set)
+        self.spell_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.spell_listbox.yview)
+
+        self.all_spells = summoner_spell_data.get_spell_list()
+        self._update_list(self.all_spells)
+
+        self.spell_listbox.bind("<Double-Button-1>", self._on_select)
+        self.spell_listbox.bind("<Return>", self._on_select)
+
+        btn_frame = tk.Frame(self)
+        btn_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        tk.Button(btn_frame, text="Select", command=self._on_select).pack(side=tk.LEFT, padx=2)
+        tk.Button(btn_frame, text="Cancel", command=self.destroy).pack(side=tk.LEFT, padx=2)
+
+    def _update_list(self, spells):
+        self.spell_listbox.delete(0, tk.END)
+        for spell in spells:
+            self.spell_listbox.insert(tk.END, spell)
+
+    def _on_search(self, *args):
+        search_term = self.search_var.get().lower()
+        filtered = [s for s in self.all_spells if search_term in s.lower()]
+        self._update_list(filtered)
+
+    def _on_select(self, event=None):
+        selection = self.spell_listbox.curselection()
+        if selection:
+            self.selected_spell = self.spell_listbox.get(selection[0])
+            self.callback(self.selected_spell)
+            self.destroy()
 
 
 class ChampionSelector(tk.Toplevel):
@@ -275,6 +484,7 @@ class OverlayApp:
             self.slots[i] = slot
 
             slot.on_double_click_callback = self._select_champion
+            slot.on_summoner_spell_select_callback = self._select_summoner_spell
 
     def _setup_drag_and_drop(self):
         self.dragging = False
@@ -304,10 +514,21 @@ class OverlayApp:
 
         ChampionSelector(self.root, on_selected)
 
+    def _select_summoner_spell(self, slot_id: int, spell_slot: int):
+        def on_selected(spell_name):
+            if LAYOUT == "vertical" and slot_id in self.slots:
+                spell_slot_widget = self.slots[slot_id].summoner_spell_slots.get(spell_slot)
+                if spell_slot_widget:
+                    spell_slot_widget.set_spell(spell_name)
+
+        SummonerSpellSelector(self.root, on_selected)
+
     def _update_all_timers(self):
         for slot in self.slots.values():
             slot.update_timer_display()
             slot._update_level_display()
+            if LAYOUT == "vertical":
+                slot.update_summoner_spell_displays()
 
     def _start_update_loop(self):
         self._update_all_timers()
