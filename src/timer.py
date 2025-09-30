@@ -7,6 +7,7 @@ of champion ultimate abilities at different levels.
 
 import time
 from typing import Optional, Callable
+from config import SOUND_ALERT_THRESHOLD
 
 
 class CooldownTimer:
@@ -17,21 +18,27 @@ class CooldownTimer:
     for a champion's ultimate ability.
     """
 
-    def __init__(self, champion: str, cooldowns: list[float], level: int = 0):
+    def __init__(self, champion: str, cooldowns: list[float], level: int = 0, on_ready_callback: Optional[Callable] = None):
         self.champion = champion
         self.cooldowns = cooldowns
         self.level = level
         self.start_time: Optional[float] = None
         self.is_active = False
+        self.was_ready = True
+        self.sound_played = False
+        self.on_ready_callback = on_ready_callback
 
     def start(self):
         if not self.is_active and self.cooldowns:
             self.start_time = time.time()
             self.is_active = True
+            self.was_ready = False
+            self.sound_played = False
 
     def reset(self):
         self.start_time = None
         self.is_active = False
+        self.sound_played = False
 
     def get_current_cooldown(self) -> float:
         if not self.cooldowns or self.level >= len(self.cooldowns):
@@ -48,7 +55,12 @@ class CooldownTimer:
 
         if remaining <= 0:
             self.reset()
+            self.was_ready = True
             return 0.0
+
+        if remaining <= SOUND_ALERT_THRESHOLD and not self.sound_played and self.on_ready_callback:
+            self.on_ready_callback()
+            self.sound_played = True
 
         return remaining
 
@@ -136,8 +148,8 @@ class TimerManager:
         self.summoner_spell_timers: dict[tuple[int, int], Optional[SummonerSpellTimer]] = {}
         self.update_callbacks: list[Callable] = []
 
-    def create_timer(self, slot: int, champion: str, cooldowns: list[float], level: int = 0):
-        self.timers[slot] = CooldownTimer(champion, cooldowns, level)
+    def create_timer(self, slot: int, champion: str, cooldowns: list[float], level: int = 0, on_ready_callback: Optional[Callable] = None):
+        self.timers[slot] = CooldownTimer(champion, cooldowns, level, on_ready_callback)
 
     def remove_timer(self, slot: int):
         if slot in self.timers:

@@ -59,4 +59,7 @@ ICONS_DIR = "data/champion_icons"
 SUMMONER_SPELLS_DATA_PATH = "data/summoner_spells_cooldowns.json"
 SUMMONER_SPELLS_DIR = "data/summoner spells"
 
+SOUND_FILE_PATH = "data/ult_ready.wav"
+SOUND_ALERT_THRESHOLD = 4
+
 SETTINGS_FILE = "settings.json"

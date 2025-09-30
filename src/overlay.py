@@ -8,6 +8,7 @@ ultimate cooldowns in League of Legends matches.
 import tkinter as tk
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import os
+import pygame
 
 from config import *
 from champion_data import champion_data, summoner_spell_data
@@ -292,7 +293,7 @@ class ChampionSlot(tk.Frame):
 
         cooldowns = champion_data.get_all_cooldowns(champion_name)
         if cooldowns:
-            self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns)
+            self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns, on_ready_callback=self.app._play_ready_sound)
 
     def update_timer_display(self):
         if not self.base_image:
@@ -547,6 +548,11 @@ class OverlayApp:
 
         self.locked = settings.get("locked", False)
 
+        pygame.mixer.init()
+        self.ready_sound = None
+        if os.path.exists(SOUND_FILE_PATH):
+            self.ready_sound = pygame.mixer.Sound(SOUND_FILE_PATH)
+
         self.timer_manager = TimerManager()
         self.timer_manager.register_update_callback(self._update_all_timers)
 
@@ -768,6 +774,10 @@ class OverlayApp:
         self.root.bind("<Button-1>", start_drag, add="+")
         self.root.bind("<B1-Motion>", do_drag, add="+")
         self.root.bind("<ButtonRelease-1>", stop_drag, add="+")
+
+    def _play_ready_sound(self):
+        if self.ready_sound:
+            self.ready_sound.play()
 
     def _select_champion(self, slot_id: int):
         def on_selected(champion_name):
