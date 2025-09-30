@@ -67,14 +67,14 @@ PULSE_DURATION = 5
 
 MENU_BUTTON_HOVER_COLOR = "#aaaaaa"
 
-CHAMPIONS_DATA_PATH = get_resource_path("data/champions_ult_cooldowns.json")
-CHAMPION_ULT_ICONS_DIR = get_resource_path("data/champion_ult_icons")
-CHAMPION_ICONS_DIR = get_resource_path("data/champion_icons")
+CHAMPIONS_DATA_PATH = get_resource_path("data/game_data/champions_ult_cooldowns.json")
+CHAMPION_ULT_ICONS_DIR = get_resource_path("data/icons/champion_ults")
+CHAMPION_ICONS_DIR = get_resource_path("data/icons/champions")
 
-SUMMONER_SPELLS_DATA_PATH = get_resource_path("data/summoner_spells_cooldowns.json")
-SUMMONER_SPELLS_DIR = get_resource_path("data/summoner spells")
+SUMMONER_SPELLS_DATA_PATH = get_resource_path("data/game_data/summoner_spells_cooldowns.json")
+SUMMONER_SPELLS_DIR = get_resource_path("data/icons/summoner_spells")
 
-SOUND_FILE_PATH = get_resource_path("data/ult_ready.wav")
+SOUND_FILE_PATH = get_resource_path("data/sounds/ult_ready.wav")
 SOUND_ALERT_THRESHOLD = 1
 SOUND_ENABLED = True
 SOUND_VOLUME = 1.0

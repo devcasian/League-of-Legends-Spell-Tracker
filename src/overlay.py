@@ -1610,7 +1610,7 @@ class OverlayApp:
         save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons)
 
     def _setup_tray_icon(self):
-        logo_path = get_resource_path("data/logo.ico")
+        logo_path = get_resource_path("data/assets/logo.ico")
         if os.path.exists(logo_path):
             tray_image = Image.open(logo_path)
         else:

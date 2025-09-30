@@ -133,13 +133,17 @@ League-of-Legends-Spell-Tracker/
 │   ├── config.py                       # Application settings
 │   └── settings.py                     # Settings persistence
 └── data/                               # Game data
-    ├── champions_ult_cooldowns.json    # Ultimate cooldowns
-    ├── summoner_spells_cooldowns.json  # Summoner spell cooldowns
-    ├── champion_icons/                 # Champion portrait icons (171 files)
-    ├── champion_ult_icons/             # Ultimate ability icons (171 files)
-    ├── summoner spells/                # Summoner spell icons (10 files)
-    ├── ult_ready.wav                   # Sound effect
-    └── logo.ico                        # Application icon
+    ├── game_data/                      # JSON data files
+    │   ├── champions_ult_cooldowns.json
+    │   └── summoner_spells_cooldowns.json
+    ├── icons/                          # Icon assets
+    │   ├── champions/                  # Champion portrait icons (171 files)
+    │   ├── champion_ults/              # Ultimate ability icons (171 files)
+    │   └── summoner_spells/            # Summoner spell icons (10 files)
+    ├── sounds/                         # Audio files
+    │   └── ult_ready.wav
+    └── assets/                         # Application assets
+        └── logo.ico
 ```
 
 ## ⚙️ Configuration
