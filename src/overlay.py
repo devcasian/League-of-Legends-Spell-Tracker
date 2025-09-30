@@ -435,7 +435,7 @@ class ChampionSlot(tk.Frame):
 class SummonerSpellSelector(tk.Toplevel):
     """Summoner spell selection dialog."""
 
-    def __init__(self, parent, callback, cleanup_callback=None):
+    def __init__(self, parent, callback, cleanup_callback=None, position=None):
         super().__init__(parent)
         self.callback = callback
         self.cleanup_callback = cleanup_callback
@@ -447,6 +447,10 @@ class SummonerSpellSelector(tk.Toplevel):
         self.configure(bg=OVERLAY_BG_COLOR)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        if position:
+            self.update_idletasks()
+            self.geometry(f"+{position[0]}+{position[1]}")
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self._on_search)
@@ -559,7 +563,7 @@ class SummonerSpellSelector(tk.Toplevel):
 class ChampionSelector(tk.Toplevel):
     """Champion selection dialog."""
 
-    def __init__(self, parent, callback, cleanup_callback=None):
+    def __init__(self, parent, callback, cleanup_callback=None, position=None):
         super().__init__(parent)
         self.callback = callback
         self.cleanup_callback = cleanup_callback
@@ -571,6 +575,10 @@ class ChampionSelector(tk.Toplevel):
         self.configure(bg=OVERLAY_BG_COLOR)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        if position:
+            self.update_idletasks()
+            self.geometry(f"+{position[0]}+{position[1]}")
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self._on_search)
@@ -683,7 +691,7 @@ class ChampionSelector(tk.Toplevel):
 class SettingsDialog(tk.Toplevel):
     """Settings dialog for sound configuration."""
 
-    def __init__(self, parent, app):
+    def __init__(self, parent, app, position=None):
         super().__init__(parent)
         self.app = app
 
@@ -694,6 +702,10 @@ class SettingsDialog(tk.Toplevel):
         self.configure(bg=OVERLAY_BG_COLOR)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        if position:
+            self.update_idletasks()
+            self.geometry(f"+{position[0]}+{position[1]}")
 
         self.sound_enabled_var = tk.BooleanVar(value=self.app.sound_enabled)
         self.current_volume = int(self.app.sound_volume * 100)
@@ -943,9 +955,12 @@ class SettingsDialog(tk.Toplevel):
             self.current_ui_scale = new_scale
             self.scale_label.config(text=f"{int(self.current_ui_scale * 100)}%")
             self.app.ui_scale = self.current_ui_scale
+
+            x = self.winfo_x()
+            y = self.winfo_y()
             self.destroy()
             self.app._apply_scale_change()
-            self.app.root.after(50, self.app._open_settings)
+            self.app.root.after(50, lambda: self.app._open_settings((x, y)))
 
     def _increase_scale(self):
         new_scale = round(self.current_ui_scale + UI_SCALE_STEP, 1)
@@ -953,17 +968,23 @@ class SettingsDialog(tk.Toplevel):
             self.current_ui_scale = new_scale
             self.scale_label.config(text=f"{int(self.current_ui_scale * 100)}%")
             self.app.ui_scale = self.current_ui_scale
+
+            x = self.winfo_x()
+            y = self.winfo_y()
             self.destroy()
             self.app._apply_scale_change()
-            self.app.root.after(50, self.app._open_settings)
+            self.app.root.after(50, lambda: self.app._open_settings((x, y)))
 
     def _reset_scale(self):
         self.current_ui_scale = 1.0
         self.scale_label.config(text="100%")
         self.app.ui_scale = self.current_ui_scale
+
+        x = self.winfo_x()
+        y = self.winfo_y()
         self.destroy()
         self.app._apply_scale_change()
-        self.app.root.after(50, self.app._open_settings)
+        self.app.root.after(50, lambda: self.app._open_settings((x, y)))
 
     def _on_close(self):
         self.app.settings_dialog = None
@@ -1192,13 +1213,30 @@ class OverlayApp:
         canvas.create_line(7, 7, 17, 17, fill=color, width=2)
         canvas.create_line(17, 7, 7, 17, fill=color, width=2)
 
-    def _open_settings(self):
+    def _get_dialog_position(self, dialog_width=300, dialog_height=400):
+        """Calculate position for dialog to appear left of overlay."""
+        overlay_x = self.root.winfo_x()
+        overlay_y = self.root.winfo_y()
+        overlay_height = self.root.winfo_height()
+
+        dialog_x = overlay_x - dialog_width - 10
+        dialog_y = overlay_y + (overlay_height - dialog_height) // 2
+
+        if dialog_x < 0:
+            dialog_x = overlay_x + self.root.winfo_width() + 10
+
+        return (dialog_x, dialog_y)
+
+    def _open_settings(self, position=None):
         if self.settings_dialog and self.settings_dialog.winfo_exists():
             self.settings_dialog.lift()
             self.settings_dialog.focus_force()
             return
 
-        self.settings_dialog = SettingsDialog(self.root, self)
+        if position is None:
+            position = self._get_dialog_position(320, 310)
+
+        self.settings_dialog = SettingsDialog(self.root, self, position)
 
     def _quit_app(self):
         self._exit_app()
@@ -1410,7 +1448,8 @@ class OverlayApp:
         def on_cleanup():
             self.champion_selector = None
 
-        self.champion_selector = ChampionSelector(self.root, on_selected, on_cleanup)
+        position = self._get_dialog_position(300, 400)
+        self.champion_selector = ChampionSelector(self.root, on_selected, on_cleanup, position)
 
     def _select_summoner_spell(self, slot_id: int, spell_slot: int):
         if self.summoner_spell_selector and self.summoner_spell_selector.winfo_exists():
@@ -1427,7 +1466,8 @@ class OverlayApp:
         def on_cleanup():
             self.summoner_spell_selector = None
 
-        self.summoner_spell_selector = SummonerSpellSelector(self.root, on_selected, on_cleanup)
+        position = self._get_dialog_position(300, 400)
+        self.summoner_spell_selector = SummonerSpellSelector(self.root, on_selected, on_cleanup, position)
 
     def _update_all_timers(self):
         for slot in self.slots.values():
