@@ -45,6 +45,56 @@ def apply_ui_scale(scale):
     TIMER_FONT = ("Arial", timer_font_size, "bold")
 
 
+class ToolTip:
+    """Tooltip widget for displaying hints on hover."""
+
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.scheduled_show = None
+
+    def show(self, event=None):
+        if self.scheduled_show:
+            self.widget.after_cancel(self.scheduled_show)
+
+        self.scheduled_show = self.widget.after(500, self._show_tooltip)
+
+    def hide(self, event=None):
+        if self.scheduled_show:
+            self.widget.after_cancel(self.scheduled_show)
+            self.scheduled_show = None
+
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+
+    def _show_tooltip(self):
+        if self.tooltip_window or not self.text:
+            return
+
+        x = self.widget.winfo_rootx() + self.widget.winfo_width() // 2
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
+
+        self.tooltip_window = tk.Toplevel(self.widget)
+        self.tooltip_window.wm_overrideredirect(True)
+        self.tooltip_window.wm_geometry(f"+{x}+{y}")
+        self.tooltip_window.attributes("-topmost", True)
+
+        label = tk.Label(
+            self.tooltip_window,
+            text=self.text,
+            background="#2a2a2a",
+            foreground="#ffffff",
+            relief=tk.SOLID,
+            borderwidth=1,
+            font=("Arial", 9),
+            padx=8,
+            pady=4
+        )
+        label.pack()
+
+
 class SummonerSpellSlot(tk.Frame):
     """Widget representing a single summoner spell slot with icon and timer overlay."""
 
@@ -1082,8 +1132,19 @@ class OverlayApp:
 
         self._draw_layout_icon(self.toggle_canvas)
         self.toggle_canvas.bind("<Button-1>", lambda e: self._toggle_layout())
-        self.toggle_canvas.bind("<Enter>", lambda e: self._draw_layout_icon(self.toggle_canvas, MENU_BUTTON_HOVER_COLOR))
-        self.toggle_canvas.bind("<Leave>", lambda e: self._draw_layout_icon(self.toggle_canvas))
+
+        self.toggle_tooltip = ToolTip(self.toggle_canvas, "Toggle layout (horizontal/vertical)")
+
+        def on_enter_toggle(e):
+            self._draw_layout_icon(self.toggle_canvas, MENU_BUTTON_HOVER_COLOR)
+            self.toggle_tooltip.show()
+
+        def on_leave_toggle(e):
+            self._draw_layout_icon(self.toggle_canvas)
+            self.toggle_tooltip.hide()
+
+        self.toggle_canvas.bind("<Enter>", on_enter_toggle)
+        self.toggle_canvas.bind("<Leave>", on_leave_toggle)
 
         self.pin_canvas = tk.Canvas(
             menu_frame,
@@ -1096,8 +1157,19 @@ class OverlayApp:
 
         self._draw_pin_icon(self.pin_canvas)
         self.pin_canvas.bind("<Button-1>", lambda e: self._save_position())
-        self.pin_canvas.bind("<Enter>", lambda e: self._draw_pin_icon(self.pin_canvas, MENU_BUTTON_HOVER_COLOR))
-        self.pin_canvas.bind("<Leave>", lambda e: self._draw_pin_icon(self.pin_canvas))
+
+        self.pin_tooltip = ToolTip(self.pin_canvas, "Save current position")
+
+        def on_enter_pin(e):
+            self._draw_pin_icon(self.pin_canvas, MENU_BUTTON_HOVER_COLOR)
+            self.pin_tooltip.show()
+
+        def on_leave_pin(e):
+            self._draw_pin_icon(self.pin_canvas)
+            self.pin_tooltip.hide()
+
+        self.pin_canvas.bind("<Enter>", on_enter_pin)
+        self.pin_canvas.bind("<Leave>", on_leave_pin)
 
         self.lock_canvas = tk.Canvas(
             menu_frame,
@@ -1110,8 +1182,19 @@ class OverlayApp:
 
         self._draw_lock_icon(self.lock_canvas)
         self.lock_canvas.bind("<Button-1>", lambda e: self._toggle_lock())
-        self.lock_canvas.bind("<Enter>", lambda e: self._draw_lock_icon(self.lock_canvas, MENU_BUTTON_HOVER_COLOR))
-        self.lock_canvas.bind("<Leave>", lambda e: self._draw_lock_icon(self.lock_canvas))
+
+        self.lock_tooltip = ToolTip(self.lock_canvas, "Lock overlay (prevent changes)")
+
+        def on_enter_lock(e):
+            self._draw_lock_icon(self.lock_canvas, MENU_BUTTON_HOVER_COLOR)
+            self.lock_tooltip.show()
+
+        def on_leave_lock(e):
+            self._draw_lock_icon(self.lock_canvas)
+            self.lock_tooltip.hide()
+
+        self.lock_canvas.bind("<Enter>", on_enter_lock)
+        self.lock_canvas.bind("<Leave>", on_leave_lock)
 
         self.settings_canvas = tk.Canvas(
             menu_frame,
@@ -1124,8 +1207,19 @@ class OverlayApp:
 
         self._draw_settings_icon(self.settings_canvas)
         self.settings_canvas.bind("<Button-1>", lambda e: self._open_settings())
-        self.settings_canvas.bind("<Enter>", lambda e: self._draw_settings_icon(self.settings_canvas, MENU_BUTTON_HOVER_COLOR))
-        self.settings_canvas.bind("<Leave>", lambda e: self._draw_settings_icon(self.settings_canvas))
+
+        self.settings_tooltip = ToolTip(self.settings_canvas, "Settings")
+
+        def on_enter_settings(e):
+            self._draw_settings_icon(self.settings_canvas, MENU_BUTTON_HOVER_COLOR)
+            self.settings_tooltip.show()
+
+        def on_leave_settings(e):
+            self._draw_settings_icon(self.settings_canvas)
+            self.settings_tooltip.hide()
+
+        self.settings_canvas.bind("<Enter>", on_enter_settings)
+        self.settings_canvas.bind("<Leave>", on_leave_settings)
 
         self.close_canvas = tk.Canvas(
             menu_frame,
@@ -1138,8 +1232,19 @@ class OverlayApp:
 
         self._draw_close_icon(self.close_canvas)
         self.close_canvas.bind("<Button-1>", lambda e: self._quit_app())
-        self.close_canvas.bind("<Enter>", lambda e: self._draw_close_icon(self.close_canvas, "#e74c3c"))
-        self.close_canvas.bind("<Leave>", lambda e: self._draw_close_icon(self.close_canvas))
+
+        self.close_tooltip = ToolTip(self.close_canvas, "Close application")
+
+        def on_enter_close(e):
+            self._draw_close_icon(self.close_canvas, "#e74c3c")
+            self.close_tooltip.show()
+
+        def on_leave_close(e):
+            self._draw_close_icon(self.close_canvas)
+            self.close_tooltip.hide()
+
+        self.close_canvas.bind("<Enter>", on_enter_close)
+        self.close_canvas.bind("<Leave>", on_leave_close)
 
         self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
         self.border_frame.pack(fill=tk.BOTH, expand=True)
