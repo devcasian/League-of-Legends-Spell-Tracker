@@ -28,6 +28,7 @@ class SummonerSpellSlot(tk.Frame):
         self.base_image = None
         self.photo_image = None
         self.on_double_click_callback = None
+        self.timer_was_used = False
 
         self.canvas = tk.Canvas(
             self,
@@ -78,6 +79,8 @@ class SummonerSpellSlot(tk.Frame):
         if not timer:
             return
 
+        self._update_border(timer)
+
         img = self.base_image.copy()
 
         if not timer.is_ready():
@@ -125,6 +128,7 @@ class SummonerSpellSlot(tk.Frame):
         if timer:
             if timer.is_ready():
                 self.timer_manager.start_summoner_spell_timer(self.slot_id, self.spell_slot)
+                self.timer_was_used = True
             else:
                 self.timer_manager.reset_summoner_spell_timer(self.slot_id, self.spell_slot)
 
@@ -133,6 +137,29 @@ class SummonerSpellSlot(tk.Frame):
             return
         if self.on_double_click_callback:
             self.on_double_click_callback(self.slot_id, self.spell_slot)
+
+    def _update_border(self, timer):
+        if timer.is_ready():
+            if self.timer_was_used:
+                self.canvas.config(
+                    highlightthickness=2,
+                    highlightbackground=READY_BORDER_COLOR
+                )
+            else:
+                self.canvas.config(
+                    highlightthickness=2,
+                    highlightbackground=READY_BORDER_COLOR
+                )
+        else:
+            if timer.is_active:
+                self.canvas.config(
+                    highlightthickness=2,
+                    highlightbackground=ACTIVE_BORDER_COLOR
+                )
+            else:
+                self.canvas.config(
+                    highlightthickness=0
+                )
 
 
 class ChampionSlot(tk.Frame):
@@ -147,6 +174,7 @@ class ChampionSlot(tk.Frame):
         self.base_image = None
         self.photo_image = None
         self.summoner_spell_slots = {}
+        self.timer_was_used = False
 
         self._create_widgets()
 
@@ -274,6 +302,8 @@ class ChampionSlot(tk.Frame):
         if not timer:
             return
 
+        self._update_border(timer)
+
         img = self.base_image.copy()
 
         if not timer.is_ready():
@@ -321,6 +351,7 @@ class ChampionSlot(tk.Frame):
         if timer:
             if timer.is_ready():
                 self.timer_manager.start_timer(self.slot_id)
+                self.timer_was_used = True
             else:
                 self.timer_manager.reset_timer(self.slot_id)
 
@@ -346,6 +377,29 @@ class ChampionSlot(tk.Frame):
     def update_summoner_spell_displays(self):
         for spell_slot in self.summoner_spell_slots.values():
             spell_slot.update_timer_display()
+
+    def _update_border(self, timer):
+        if timer.is_ready():
+            if self.timer_was_used:
+                self.canvas.config(
+                    highlightthickness=2,
+                    highlightbackground=READY_BORDER_COLOR
+                )
+            else:
+                self.canvas.config(
+                    highlightthickness=2,
+                    highlightbackground=READY_BORDER_COLOR
+                )
+        else:
+            if timer.is_active:
+                self.canvas.config(
+                    highlightthickness=2,
+                    highlightbackground=ACTIVE_BORDER_COLOR
+                )
+            else:
+                self.canvas.config(
+                    highlightthickness=0
+                )
 
 
 class SummonerSpellSelector(tk.Toplevel):
@@ -528,6 +582,8 @@ class OverlayApp:
 
         self._draw_layout_icon(self.toggle_canvas)
         self.toggle_canvas.bind("<Button-1>", lambda e: self._toggle_layout())
+        self.toggle_canvas.bind("<Enter>", lambda e: self._draw_layout_icon(self.toggle_canvas, MENU_BUTTON_HOVER_COLOR))
+        self.toggle_canvas.bind("<Leave>", lambda e: self._draw_layout_icon(self.toggle_canvas))
 
         self.pin_canvas = tk.Canvas(
             menu_frame,
@@ -540,6 +596,8 @@ class OverlayApp:
 
         self._draw_pin_icon(self.pin_canvas)
         self.pin_canvas.bind("<Button-1>", lambda e: self._save_position())
+        self.pin_canvas.bind("<Enter>", lambda e: self._draw_pin_icon(self.pin_canvas, MENU_BUTTON_HOVER_COLOR))
+        self.pin_canvas.bind("<Leave>", lambda e: self._draw_pin_icon(self.pin_canvas))
 
         self.lock_canvas = tk.Canvas(
             menu_frame,
@@ -552,6 +610,8 @@ class OverlayApp:
 
         self._draw_lock_icon(self.lock_canvas)
         self.lock_canvas.bind("<Button-1>", lambda e: self._toggle_lock())
+        self.lock_canvas.bind("<Enter>", lambda e: self._draw_lock_icon(self.lock_canvas, MENU_BUTTON_HOVER_COLOR))
+        self.lock_canvas.bind("<Leave>", lambda e: self._draw_lock_icon(self.lock_canvas))
 
         self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
         self.border_frame.pack(fill=tk.BOTH, expand=True)
@@ -564,9 +624,10 @@ class OverlayApp:
 
         self._create_slots()
 
-    def _draw_layout_icon(self, canvas):
+    def _draw_layout_icon(self, canvas, color=None):
         canvas.delete("all")
-        color = LAYOUT_TOGGLE_COLOR
+        if color is None:
+            color = LAYOUT_TOGGLE_COLOR
 
         if LAYOUT == "horizontal":
             for i in range(3):
@@ -577,17 +638,19 @@ class OverlayApp:
                 x = 6 + i * 6
                 canvas.create_line(x, 6, x, 18, fill=color, width=2)
 
-    def _draw_pin_icon(self, canvas):
+    def _draw_pin_icon(self, canvas, color=None):
         canvas.delete("all")
-        color = PIN_BUTTON_COLOR
+        if color is None:
+            color = PIN_BUTTON_COLOR
 
         canvas.create_oval(10, 6, 14, 10, fill=color, outline=color)
         canvas.create_line(12, 10, 12, 18, fill=color, width=2)
         canvas.create_line(9, 15, 15, 15, fill=color, width=2)
 
-    def _draw_lock_icon(self, canvas):
+    def _draw_lock_icon(self, canvas, color=None):
         canvas.delete("all")
-        color = LOCK_BUTTON_COLOR
+        if color is None:
+            color = LOCK_BUTTON_COLOR
 
         if self.locked:
             canvas.create_rectangle(8, 11, 16, 18, outline=color, width=2)
