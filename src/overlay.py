@@ -12,6 +12,7 @@ import os
 from config import *
 from champion_data import champion_data, summoner_spell_data
 from timer import TimerManager
+from settings import load_settings, save_settings
 
 
 class SummonerSpellSlot(tk.Frame):
@@ -480,6 +481,10 @@ class OverlayApp:
         self.root.configure(bg=OVERLAY_BG_COLOR)
         self.root.resizable(False, False)
 
+        settings = load_settings()
+        global LAYOUT
+        LAYOUT = settings.get("layout", LAYOUT)
+
         self.timer_manager = TimerManager()
         self.timer_manager.register_update_callback(self._update_all_timers)
 
@@ -493,17 +498,48 @@ class OverlayApp:
         self._start_update_loop()
 
     def _create_ui(self):
-        border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
-        border_frame.pack(fill=tk.BOTH, expand=True)
+        menu_frame = tk.Frame(self.root, bg=OVERLAY_BG_COLOR, bd=0)
+        menu_frame.pack(pady=(0, 2))
 
-        inner_frame = tk.Frame(border_frame, bg=OVERLAY_BG_COLOR, bd=0, relief="flat")
+        self.toggle_canvas = tk.Canvas(
+            menu_frame,
+            width=LAYOUT_TOGGLE_SIZE,
+            height=LAYOUT_TOGGLE_SIZE,
+            bg=OVERLAY_BG_COLOR,
+            highlightthickness=0
+        )
+        self.toggle_canvas.pack(side=tk.LEFT, padx=2, pady=2)
+
+        self._draw_layout_icon(self.toggle_canvas)
+        self.toggle_canvas.bind("<Button-1>", lambda e: self._toggle_layout())
+
+        self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
+        self.border_frame.pack(fill=tk.BOTH, expand=True)
+
+        inner_frame = tk.Frame(self.border_frame, bg=OVERLAY_BG_COLOR, bd=0, relief="flat")
         inner_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
-        main_frame = tk.Frame(inner_frame, bg=OVERLAY_BG_COLOR)
-        main_frame.pack(padx=3, pady=3)
+        self.main_frame = tk.Frame(inner_frame, bg=OVERLAY_BG_COLOR)
+        self.main_frame.pack(padx=3, pady=3)
 
+        self._create_slots()
+
+    def _draw_layout_icon(self, canvas):
+        canvas.delete("all")
+        color = LAYOUT_TOGGLE_COLOR
+
+        if LAYOUT == "horizontal":
+            for i in range(3):
+                y = 6 + i * 6
+                canvas.create_line(6, y, 18, y, fill=color, width=2)
+        else:
+            for i in range(3):
+                x = 6 + i * 6
+                canvas.create_line(x, 6, x, 18, fill=color, width=2)
+
+    def _create_slots(self):
         for i in range(NUM_SLOTS):
-            slot = ChampionSlot(main_frame, i, self.timer_manager)
+            slot = ChampionSlot(self.main_frame, i, self.timer_manager)
             if LAYOUT == "horizontal":
                 slot.pack(side=tk.LEFT, padx=SLOT_SPACING)
             else:
@@ -512,6 +548,72 @@ class OverlayApp:
 
             slot.on_double_click_callback = self._select_champion
             slot.on_summoner_spell_select_callback = self._select_summoner_spell
+
+    def _toggle_layout(self):
+        global LAYOUT
+        LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
+        save_settings(LAYOUT)
+
+        slot_states = {}
+        for slot_id, slot in self.slots.items():
+            slot_state = {
+                'champion': slot.champion,
+                'summoner_spells': {},
+                'timer_state': None,
+                'spell_timer_states': {}
+            }
+
+            timer = self.timer_manager.get_timer(slot_id)
+            if timer:
+                slot_state['timer_state'] = {
+                    'level': timer.level,
+                    'is_active': timer.is_active,
+                    'start_time': timer.start_time
+                }
+
+            for spell_slot_id, spell_slot in slot.summoner_spell_slots.items():
+                slot_state['summoner_spells'][spell_slot_id] = spell_slot.spell
+
+                spell_timer = self.timer_manager.get_summoner_spell_timer(slot_id, spell_slot_id)
+                if spell_timer:
+                    slot_state['spell_timer_states'][spell_slot_id] = {
+                        'is_active': spell_timer.is_active,
+                        'start_time': spell_timer.start_time
+                    }
+
+            slot_states[slot_id] = slot_state
+
+        for slot in self.slots.values():
+            slot.destroy()
+        self.slots.clear()
+
+        self._create_slots()
+
+        for slot_id, slot_state in slot_states.items():
+            if slot_state['champion'] and slot_id in self.slots:
+                self.slots[slot_id].set_champion(slot_state['champion'])
+
+                if slot_state['timer_state']:
+                    timer = self.timer_manager.get_timer(slot_id)
+                    if timer:
+                        timer.level = slot_state['timer_state']['level']
+                        timer.is_active = slot_state['timer_state']['is_active']
+                        timer.start_time = slot_state['timer_state']['start_time']
+
+            for spell_slot_id, spell_name in slot_state['summoner_spells'].items():
+                if spell_name and slot_id in self.slots:
+                    spell_slot_widget = self.slots[slot_id].summoner_spell_slots.get(spell_slot_id)
+                    if spell_slot_widget:
+                        spell_slot_widget.set_spell(spell_name)
+
+                        if spell_slot_id in slot_state['spell_timer_states']:
+                            spell_timer = self.timer_manager.get_summoner_spell_timer(slot_id, spell_slot_id)
+                            if spell_timer:
+                                timer_state = slot_state['spell_timer_states'][spell_slot_id]
+                                spell_timer.is_active = timer_state['is_active']
+                                spell_timer.start_time = timer_state['start_time']
+
+        self._draw_layout_icon(self.toggle_canvas)
 
     def _setup_drag_and_drop(self):
         self.dragging = False

@@ -12,13 +12,16 @@ BORDER_COLOR = "#2a2a2a"
 EMPTY_SLOT_BORDER_COLOR = "#555555"
 EMPTY_SLOT_BORDER_WIDTH = 1
 
+LAYOUT_TOGGLE_SIZE = 24
+LAYOUT_TOGGLE_COLOR = "#888888"
+
 ICON_SIZE = 64
 SLOT_SPACING = 5
 
 SUMMONER_SPELL_SIZE = 30
 SUMMONER_SPELL_SPACING = 2
 
-LAYOUT = "vertical"
+LAYOUT = "horizontal"
 
 TIMER_FONT = ("Arial", 18, "bold")
 TIMER_COLOR = "#ffffff"
@@ -40,3 +43,5 @@ ICONS_DIR = "data/champion_icons"
 
 SUMMONER_SPELLS_DATA_PATH = "data/summoner_spells_cooldowns.json"
 SUMMONER_SPELLS_DIR = "data/summoner spells"
+
+SETTINGS_FILE = "settings.json"
