@@ -739,7 +739,7 @@ class SettingsDialog(tk.Toplevel):
         self.app = app
 
         self.title("Settings")
-        self.geometry("320x340")
+        self.geometry("320x410")
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
@@ -1358,7 +1358,7 @@ class OverlayApp:
             return
 
         if position is None:
-            position = self._get_dialog_position(320, 340)
+            position = self._get_dialog_position(320, 410)
 
         self.settings_dialog = SettingsDialog(self.root, self, position)
 
