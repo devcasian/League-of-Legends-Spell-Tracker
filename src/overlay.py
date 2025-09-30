@@ -18,11 +18,12 @@ from settings import load_settings, save_settings
 class SummonerSpellSlot(tk.Frame):
     """Widget representing a single summoner spell slot with icon and timer overlay."""
 
-    def __init__(self, parent, slot_id: int, spell_slot: int, timer_manager: TimerManager):
+    def __init__(self, parent, slot_id: int, spell_slot: int, timer_manager: TimerManager, app):
         super().__init__(parent, bg=OVERLAY_BG_COLOR)
         self.slot_id = slot_id
         self.spell_slot = spell_slot
         self.timer_manager = timer_manager
+        self.app = app
         self.spell = None
         self.base_image = None
         self.photo_image = None
@@ -128,6 +129,8 @@ class SummonerSpellSlot(tk.Frame):
                 self.timer_manager.reset_summoner_spell_timer(self.slot_id, self.spell_slot)
 
     def _on_double_click(self, event):
+        if self.app.locked:
+            return
         if self.on_double_click_callback:
             self.on_double_click_callback(self.slot_id, self.spell_slot)
 
@@ -135,10 +138,11 @@ class SummonerSpellSlot(tk.Frame):
 class ChampionSlot(tk.Frame):
     """Widget representing a single champion slot with icon and timer overlay."""
 
-    def __init__(self, parent, slot_id: int, timer_manager: TimerManager):
+    def __init__(self, parent, slot_id: int, timer_manager: TimerManager, app):
         super().__init__(parent, bg=OVERLAY_BG_COLOR)
         self.slot_id = slot_id
         self.timer_manager = timer_manager
+        self.app = app
         self.champion = None
         self.base_image = None
         self.photo_image = None
@@ -175,7 +179,7 @@ class ChampionSlot(tk.Frame):
             spells_container.pack(side=tk.LEFT, padx=(3, 0))
 
             for i in range(2):
-                spell_slot = SummonerSpellSlot(spells_container, self.slot_id, i, self.timer_manager)
+                spell_slot = SummonerSpellSlot(spells_container, self.slot_id, i, self.timer_manager, self.app)
                 spell_slot.pack(pady=(0, SUMMONER_SPELL_SPACING) if i == 0 else 0)
                 spell_slot.on_double_click_callback = self.on_summoner_spell_double_click
                 self.summoner_spell_slots[i] = spell_slot
@@ -208,7 +212,7 @@ class ChampionSlot(tk.Frame):
             spells_container.pack(pady=(2, 0))
 
             for i in range(2):
-                spell_slot = SummonerSpellSlot(spells_container, self.slot_id, i, self.timer_manager)
+                spell_slot = SummonerSpellSlot(spells_container, self.slot_id, i, self.timer_manager, self.app)
                 spell_slot.pack(side=tk.LEFT, padx=(0, SUMMONER_SPELL_SPACING) if i == 0 else 0)
                 spell_slot.on_double_click_callback = self.on_summoner_spell_double_click
                 self.summoner_spell_slots[i] = spell_slot
@@ -334,6 +338,8 @@ class ChampionSlot(tk.Frame):
                 self.level_label.config(text=level_names[timer.level])
 
     def _on_double_click(self, event):
+        if self.app.locked:
+            return
         if hasattr(self, 'on_double_click_callback') and self.on_double_click_callback:
             self.on_double_click_callback(self.slot_id)
 
@@ -485,6 +491,8 @@ class OverlayApp:
         global LAYOUT
         LAYOUT = settings.get("layout", LAYOUT)
 
+        self.locked = settings.get("locked", False)
+
         self.timer_manager = TimerManager()
         self.timer_manager.register_update_callback(self._update_all_timers)
 
@@ -533,6 +541,18 @@ class OverlayApp:
         self._draw_pin_icon(self.pin_canvas)
         self.pin_canvas.bind("<Button-1>", lambda e: self._save_position())
 
+        self.lock_canvas = tk.Canvas(
+            menu_frame,
+            width=LOCK_BUTTON_SIZE,
+            height=LOCK_BUTTON_SIZE,
+            bg=OVERLAY_BG_COLOR,
+            highlightthickness=0
+        )
+        self.lock_canvas.pack(side=tk.LEFT, padx=2, pady=2)
+
+        self._draw_lock_icon(self.lock_canvas)
+        self.lock_canvas.bind("<Button-1>", lambda e: self._toggle_lock())
+
         self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
         self.border_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -565,9 +585,23 @@ class OverlayApp:
         canvas.create_line(12, 10, 12, 18, fill=color, width=2)
         canvas.create_line(9, 15, 15, 15, fill=color, width=2)
 
+    def _draw_lock_icon(self, canvas):
+        canvas.delete("all")
+        color = LOCK_BUTTON_COLOR
+
+        if self.locked:
+            canvas.create_rectangle(8, 11, 16, 18, outline=color, width=2)
+            canvas.create_arc(9, 6, 15, 13, start=0, extent=180, outline=color, width=2, style="arc")
+            canvas.create_oval(11, 13, 13, 15, fill=color, outline=color)
+        else:
+            canvas.create_rectangle(8, 11, 16, 18, outline=color, width=2)
+            canvas.create_arc(9, 6, 15, 13, start=0, extent=180, outline=color, width=2, style="arc")
+            canvas.create_line(14, 8, 17, 8, fill=color, width=2)
+            canvas.create_oval(11, 13, 13, 15, fill=color, outline=color)
+
     def _create_slots(self):
         for i in range(NUM_SLOTS):
-            slot = ChampionSlot(self.main_frame, i, self.timer_manager)
+            slot = ChampionSlot(self.main_frame, i, self.timer_manager, self)
             if LAYOUT == "horizontal":
                 slot.pack(side=tk.LEFT, padx=SLOT_SPACING)
             else:
@@ -643,10 +677,17 @@ class OverlayApp:
 
         self._draw_layout_icon(self.toggle_canvas)
 
+    def _toggle_lock(self):
+        self.locked = not self.locked
+        save_settings(LAYOUT, locked=self.locked)
+        self._draw_lock_icon(self.lock_canvas)
+
     def _setup_drag_and_drop(self):
         self.dragging = False
 
         def start_drag(event):
+            if self.locked:
+                return
             if event.widget.__class__.__name__ != 'Canvas':
                 self.dragging = True
                 self.drag_start_x = event.x_root - self.root.winfo_x()
