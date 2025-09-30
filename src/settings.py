@@ -6,7 +6,7 @@ This module handles saving and loading user preferences.
 
 import json
 import os
-from config import SETTINGS_FILE, LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD
+from config import SETTINGS_FILE, LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE
 
 
 def load_settings():
@@ -18,7 +18,8 @@ def load_settings():
             "locked": False,
             "sound_enabled": SOUND_ENABLED,
             "sound_volume": SOUND_VOLUME,
-            "sound_alert_threshold": SOUND_ALERT_THRESHOLD
+            "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
+            "ui_scale": UI_SCALE
         }
 
     try:
@@ -34,6 +35,8 @@ def load_settings():
                 settings["sound_volume"] = SOUND_VOLUME
             if "sound_alert_threshold" not in settings:
                 settings["sound_alert_threshold"] = SOUND_ALERT_THRESHOLD
+            if "ui_scale" not in settings:
+                settings["ui_scale"] = UI_SCALE
             return settings
     except (json.JSONDecodeError, IOError):
         return {
@@ -42,11 +45,12 @@ def load_settings():
             "locked": False,
             "sound_enabled": SOUND_ENABLED,
             "sound_volume": SOUND_VOLUME,
-            "sound_alert_threshold": SOUND_ALERT_THRESHOLD
+            "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
+            "ui_scale": UI_SCALE
         }
 
 
-def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None):
+def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None):
     """Save user settings to JSON file."""
     current_settings = load_settings()
     current_settings["layout"] = layout
@@ -60,6 +64,8 @@ def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_
         current_settings["sound_volume"] = sound_volume
     if sound_alert_threshold is not None:
         current_settings["sound_alert_threshold"] = sound_alert_threshold
+    if ui_scale is not None:
+        current_settings["ui_scale"] = ui_scale
 
     try:
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:

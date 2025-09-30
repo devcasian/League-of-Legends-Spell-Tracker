@@ -17,6 +17,29 @@ from timer import TimerManager
 from settings import load_settings, save_settings
 
 
+def apply_ui_scale(scale):
+    """Apply UI scale to all size-related constants."""
+    global ICON_SIZE, SUMMONER_SPELL_SIZE, SLOT_SPACING, SUMMONER_SPELL_SPACING
+    global EMPTY_SLOT_BORDER_WIDTH, LAYOUT_TOGGLE_SIZE, PIN_BUTTON_SIZE, LOCK_BUTTON_SIZE, SETTINGS_BUTTON_SIZE
+    global NAME_FONT, TIMER_FONT
+
+    ICON_SIZE = int(64 * scale)
+    SUMMONER_SPELL_SIZE = int(30 * scale)
+    SLOT_SPACING = int(5 * scale)
+    SUMMONER_SPELL_SPACING = int(2 * scale)
+    EMPTY_SLOT_BORDER_WIDTH = max(1, int(1 * scale))
+
+    LAYOUT_TOGGLE_SIZE = int(24 * scale)
+    PIN_BUTTON_SIZE = int(24 * scale)
+    LOCK_BUTTON_SIZE = int(24 * scale)
+    SETTINGS_BUTTON_SIZE = int(24 * scale)
+
+    name_font_size = max(6, int(9 * scale))
+    timer_font_size = max(10, int(18 * scale))
+    NAME_FONT = ("Arial", name_font_size)
+    TIMER_FONT = ("Arial", timer_font_size, "bold")
+
+
 class SummonerSpellSlot(tk.Frame):
     """Widget representing a single summoner spell slot with icon and timer overlay."""
 
@@ -640,7 +663,7 @@ class SettingsDialog(tk.Toplevel):
         self.app = app
 
         self.title("Settings")
-        self.geometry("320x240")
+        self.geometry("320x310")
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
@@ -648,6 +671,7 @@ class SettingsDialog(tk.Toplevel):
         self.sound_enabled_var = tk.BooleanVar(value=self.app.sound_enabled)
         self.current_volume = int(self.app.sound_volume * 100)
         self.current_alert_threshold = int(self.app.sound_alert_threshold)
+        self.current_ui_scale = self.app.ui_scale
 
         main_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR, padx=20, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -760,6 +784,72 @@ class SettingsDialog(tk.Toplevel):
         self.alert_slider.set(self.current_alert_threshold)
         self.alert_slider.pack(fill=tk.X, pady=(0, 20))
 
+        ui_scale_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        ui_scale_frame.pack(fill=tk.X, pady=(0, 5))
+
+        tk.Label(
+            ui_scale_frame,
+            text="UI Scale:",
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        ).pack(side=tk.LEFT)
+
+        self.scale_label = tk.Label(
+            ui_scale_frame,
+            text=f"{int(self.current_ui_scale * 100)}%",
+            width=5,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        self.scale_label.pack(side=tk.RIGHT)
+
+        scale_buttons_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        scale_buttons_frame.pack(fill=tk.X, pady=(0, 20))
+
+        tk.Button(
+            scale_buttons_frame,
+            text="−",
+            command=self._decrease_scale,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            activebackground="#3a3a3a",
+            activeforeground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 12),
+            cursor="hand2",
+            width=3
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        tk.Button(
+            scale_buttons_frame,
+            text="Reset",
+            command=self._reset_scale,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            activebackground="#3a3a3a",
+            activeforeground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 10),
+            cursor="hand2",
+            width=10
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        tk.Button(
+            scale_buttons_frame,
+            text="+",
+            command=self._increase_scale,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            activebackground="#3a3a3a",
+            activeforeground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 12),
+            cursor="hand2",
+            width=3
+        ).pack(side=tk.LEFT)
+
         self._update_slider_state()
 
         btn_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
@@ -820,10 +910,39 @@ class SettingsDialog(tk.Toplevel):
             self.app.ready_sound.set_volume(volume)
             self.app.ready_sound.play()
 
+    def _decrease_scale(self):
+        new_scale = round(self.current_ui_scale - UI_SCALE_STEP, 1)
+        if new_scale >= UI_SCALE_MIN:
+            self.current_ui_scale = new_scale
+            self.scale_label.config(text=f"{int(self.current_ui_scale * 100)}%")
+            self.app.ui_scale = self.current_ui_scale
+            self.destroy()
+            self.app._apply_scale_change()
+            self.app.root.after(50, self.app._open_settings)
+
+    def _increase_scale(self):
+        new_scale = round(self.current_ui_scale + UI_SCALE_STEP, 1)
+        if new_scale <= UI_SCALE_MAX:
+            self.current_ui_scale = new_scale
+            self.scale_label.config(text=f"{int(self.current_ui_scale * 100)}%")
+            self.app.ui_scale = self.current_ui_scale
+            self.destroy()
+            self.app._apply_scale_change()
+            self.app.root.after(50, self.app._open_settings)
+
+    def _reset_scale(self):
+        self.current_ui_scale = 1.0
+        self.scale_label.config(text="100%")
+        self.app.ui_scale = self.current_ui_scale
+        self.destroy()
+        self.app._apply_scale_change()
+        self.app.root.after(50, self.app._open_settings)
+
     def _on_save(self):
         self.app.sound_enabled = self.sound_enabled_var.get()
         self.app.sound_volume = self.current_volume / 100.0
         self.app.sound_alert_threshold = self.current_alert_threshold
+        self.app.ui_scale = self.current_ui_scale
         if self.app.ready_sound:
             self.app.ready_sound.set_volume(self.app.sound_volume)
 
@@ -832,7 +951,7 @@ class SettingsDialog(tk.Toplevel):
                 timer.alert_threshold = self.app.sound_alert_threshold
                 timer.sound_played = False
 
-        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold)
+        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale)
         self.destroy()
 
 
@@ -857,6 +976,9 @@ class OverlayApp:
         self.sound_enabled = settings.get("sound_enabled", SOUND_ENABLED)
         self.sound_volume = settings.get("sound_volume", SOUND_VOLUME)
         self.sound_alert_threshold = settings.get("sound_alert_threshold", SOUND_ALERT_THRESHOLD)
+        self.ui_scale = settings.get("ui_scale", UI_SCALE)
+
+        apply_ui_scale(self.ui_scale)
 
         pygame.mixer.init()
         self.ready_sound = None
@@ -1049,7 +1171,7 @@ class OverlayApp:
     def _toggle_layout(self):
         global LAYOUT
         LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
-        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
+        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
 
         slot_states = {}
         for slot_id, slot in self.slots.items():
@@ -1112,9 +1234,71 @@ class OverlayApp:
 
         self._draw_layout_icon(self.toggle_canvas)
 
+    def _apply_scale_change(self):
+        slot_states = {}
+        for slot_id, slot in self.slots.items():
+            slot_state = {
+                'champion': slot.champion,
+                'summoner_spells': {},
+                'timer_state': None,
+                'spell_timer_states': {}
+            }
+
+            timer = self.timer_manager.get_timer(slot_id)
+            if timer:
+                slot_state['timer_state'] = {
+                    'level': timer.level,
+                    'is_active': timer.is_active,
+                    'start_time': timer.start_time
+                }
+
+            for spell_slot_id, spell_slot in slot.summoner_spell_slots.items():
+                slot_state['summoner_spells'][spell_slot_id] = spell_slot.spell
+
+                spell_timer = self.timer_manager.get_summoner_spell_timer(slot_id, spell_slot_id)
+                if spell_timer:
+                    slot_state['spell_timer_states'][spell_slot_id] = {
+                        'is_active': spell_timer.is_active,
+                        'start_time': spell_timer.start_time
+                    }
+
+            slot_states[slot_id] = slot_state
+
+        apply_ui_scale(self.ui_scale)
+
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        self.slots.clear()
+
+        self._create_ui()
+
+        for slot_id, slot_state in slot_states.items():
+            if slot_state['champion'] and slot_id in self.slots:
+                self.slots[slot_id].set_champion(slot_state['champion'])
+
+                if slot_state['timer_state']:
+                    timer = self.timer_manager.get_timer(slot_id)
+                    if timer:
+                        timer.level = slot_state['timer_state']['level']
+                        timer.is_active = slot_state['timer_state']['is_active']
+                        timer.start_time = slot_state['timer_state']['start_time']
+
+            for spell_slot_id, spell_name in slot_state['summoner_spells'].items():
+                if spell_name and slot_id in self.slots:
+                    spell_slot_widget = self.slots[slot_id].summoner_spell_slots.get(spell_slot_id)
+                    if spell_slot_widget:
+                        spell_slot_widget.set_spell(spell_name)
+
+                        if spell_slot_id in slot_state['spell_timer_states']:
+                            spell_timer = self.timer_manager.get_summoner_spell_timer(slot_id, spell_slot_id)
+                            if spell_timer:
+                                timer_state = slot_state['spell_timer_states'][spell_slot_id]
+                                spell_timer.is_active = timer_state['is_active']
+                                spell_timer.start_time = timer_state['start_time']
+
     def _toggle_lock(self):
         self.locked = not self.locked
-        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
+        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
         self._draw_lock_icon(self.lock_canvas)
 
     def _setup_drag_and_drop(self):
@@ -1174,13 +1358,13 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
 
     def _on_closing(self):
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
         self.root.destroy()
 
     def run(self):
