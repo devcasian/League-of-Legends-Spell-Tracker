@@ -497,6 +497,14 @@ class OverlayApp:
         self._setup_drag_and_drop()
         self._start_update_loop()
 
+        position = settings.get("position")
+        if position and isinstance(position, dict):
+            x = position.get("x", 100)
+            y = position.get("y", 100)
+            self.root.geometry(f"+{x}+{y}")
+
+        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
+
     def _create_ui(self):
         menu_frame = tk.Frame(self.root, bg=OVERLAY_BG_COLOR, bd=0)
         menu_frame.pack(pady=(0, 2))
@@ -512,6 +520,18 @@ class OverlayApp:
 
         self._draw_layout_icon(self.toggle_canvas)
         self.toggle_canvas.bind("<Button-1>", lambda e: self._toggle_layout())
+
+        self.pin_canvas = tk.Canvas(
+            menu_frame,
+            width=PIN_BUTTON_SIZE,
+            height=PIN_BUTTON_SIZE,
+            bg=OVERLAY_BG_COLOR,
+            highlightthickness=0
+        )
+        self.pin_canvas.pack(side=tk.LEFT, padx=2, pady=2)
+
+        self._draw_pin_icon(self.pin_canvas)
+        self.pin_canvas.bind("<Button-1>", lambda e: self._save_position())
 
         self.border_frame = tk.Frame(self.root, bg=BORDER_COLOR, bd=0, relief="solid")
         self.border_frame.pack(fill=tk.BOTH, expand=True)
@@ -536,6 +556,14 @@ class OverlayApp:
             for i in range(3):
                 x = 6 + i * 6
                 canvas.create_line(x, 6, x, 18, fill=color, width=2)
+
+    def _draw_pin_icon(self, canvas):
+        canvas.delete("all")
+        color = PIN_BUTTON_COLOR
+
+        canvas.create_oval(10, 6, 14, 10, fill=color, outline=color)
+        canvas.create_line(12, 10, 12, 18, fill=color, width=2)
+        canvas.create_line(9, 15, 15, 15, fill=color, width=2)
 
     def _create_slots(self):
         for i in range(NUM_SLOTS):
@@ -661,6 +689,19 @@ class OverlayApp:
     def _start_update_loop(self):
         self._update_all_timers()
         self.root.after(100, self._start_update_loop)
+
+    def _save_position(self):
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        position = {"x": x, "y": y}
+        save_settings(LAYOUT, position)
+
+    def _on_closing(self):
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        position = {"x": x, "y": y}
+        save_settings(LAYOUT, position)
+        self.root.destroy()
 
     def run(self):
         self.root.mainloop()
