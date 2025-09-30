@@ -739,7 +739,7 @@ class SettingsDialog(tk.Toplevel):
         self.app = app
 
         self.title("Settings")
-        self.geometry("320x310")
+        self.geometry("320x340")
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
@@ -751,6 +751,7 @@ class SettingsDialog(tk.Toplevel):
             self.geometry(f"+{position[0]}+{position[1]}")
 
         self.sound_enabled_var = tk.BooleanVar(value=self.app.sound_enabled)
+        self.use_champion_icons_var = tk.BooleanVar(value=self.app.use_champion_icons)
         self.current_volume = int(self.app.sound_volume * 100)
         self.current_alert_threshold = int(self.app.sound_alert_threshold)
         self.current_ui_scale = self.app.ui_scale
@@ -770,7 +771,20 @@ class SettingsDialog(tk.Toplevel):
             activeforeground=NAME_COLOR,
             font=("Arial", 10)
         )
-        sound_check.pack(anchor=tk.W, pady=(0, 15))
+        sound_check.pack(anchor=tk.W, pady=(0, 10))
+
+        icon_type_check = tk.Checkbutton(
+            main_frame,
+            text="Use champion icons (instead of ult icons)",
+            variable=self.use_champion_icons_var,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            selectcolor=OVERLAY_BG_COLOR,
+            activebackground=OVERLAY_BG_COLOR,
+            activeforeground=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        icon_type_check.pack(anchor=tk.W, pady=(0, 15))
 
         volume_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
         volume_frame.pack(fill=tk.X, pady=(0, 5))
@@ -1038,6 +1052,10 @@ class SettingsDialog(tk.Toplevel):
         self.app.sound_volume = self.current_volume / 100.0
         self.app.sound_alert_threshold = self.current_alert_threshold
         self.app.ui_scale = self.current_ui_scale
+
+        icon_type_changed = self.app.use_champion_icons != self.use_champion_icons_var.get()
+        self.app.use_champion_icons = self.use_champion_icons_var.get()
+
         if self.app.ready_sound:
             self.app.ready_sound.set_volume(self.app.sound_volume)
 
@@ -1046,7 +1064,13 @@ class SettingsDialog(tk.Toplevel):
                 timer.alert_threshold = self.app.sound_alert_threshold
                 timer.sound_played = False
 
-        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale)
+        if icon_type_changed:
+            champion_data.set_icon_type(self.app.use_champion_icons)
+            for slot in self.app.slots.values():
+                if slot.champion:
+                    slot.set_champion(slot.champion)
+
+        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons)
         self.app.settings_dialog = None
         self.destroy()
 
@@ -1073,8 +1097,10 @@ class OverlayApp:
         self.sound_volume = settings.get("sound_volume", SOUND_VOLUME)
         self.sound_alert_threshold = settings.get("sound_alert_threshold", SOUND_ALERT_THRESHOLD)
         self.ui_scale = settings.get("ui_scale", UI_SCALE)
+        self.use_champion_icons = settings.get("use_champion_icons", False)
 
         apply_ui_scale(self.ui_scale)
+        champion_data.set_icon_type(self.use_champion_icons)
 
         pygame.mixer.init()
         self.ready_sound = None
@@ -1332,7 +1358,7 @@ class OverlayApp:
             return
 
         if position is None:
-            position = self._get_dialog_position(320, 310)
+            position = self._get_dialog_position(320, 340)
 
         self.settings_dialog = SettingsDialog(self.root, self, position)
 
@@ -1376,7 +1402,7 @@ class OverlayApp:
     def _toggle_layout(self):
         global LAYOUT
         LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
-        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
+        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons)
 
         slot_states = {}
         for slot_id, slot in self.slots.items():
@@ -1503,7 +1529,7 @@ class OverlayApp:
 
     def _toggle_lock(self):
         self.locked = not self.locked
-        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
+        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons)
         self._draw_lock_icon(self.lock_canvas)
 
     def _setup_drag_and_drop(self):
@@ -1581,7 +1607,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons)
 
     def _setup_tray_icon(self):
         logo_path = get_resource_path("data/logo.ico")
@@ -1617,7 +1643,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons)
         if self.tray_icon:
             self.tray_icon.stop()
         self.root.destroy()

@@ -10,6 +10,7 @@ a = Analysis(
         ('data/champions_ult_cooldowns.json', 'data'),
         ('data/summoner_spells_cooldowns.json', 'data'),
         ('data/champion_icons', 'data/champion_icons'),
+        ('data/champion_ult_icons', 'data/champion_ult_icons'),
         ('data/summoner spells', 'data/summoner spells'),
         ('data/ult_ready.wav', 'data'),
         ('data/logo.ico', 'data'),

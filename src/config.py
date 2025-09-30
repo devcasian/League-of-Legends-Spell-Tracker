@@ -68,7 +68,8 @@ PULSE_DURATION = 5
 MENU_BUTTON_HOVER_COLOR = "#aaaaaa"
 
 CHAMPIONS_DATA_PATH = get_resource_path("data/champions_ult_cooldowns.json")
-ICONS_DIR = get_resource_path("data/champion_icons")
+CHAMPION_ULT_ICONS_DIR = get_resource_path("data/champion_ult_icons")
+CHAMPION_ICONS_DIR = get_resource_path("data/champion_icons")
 
 SUMMONER_SPELLS_DATA_PATH = get_resource_path("data/summoner_spells_cooldowns.json")
 SUMMONER_SPELLS_DIR = get_resource_path("data/summoner spells")
@@ -78,13 +79,15 @@ SOUND_ALERT_THRESHOLD = 1
 SOUND_ENABLED = True
 SOUND_VOLUME = 1.0
 
+USE_CHAMPION_ICONS = False
+
 SETTINGS_BUTTON_SIZE = 24
 SETTINGS_BUTTON_COLOR = "#888888"
 
 CLOSE_BUTTON_SIZE = 24
 CLOSE_BUTTON_COLOR = "#888888"
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 DEBUG_COOLDOWN = 10
 
 UI_SCALE = 1.1

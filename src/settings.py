@@ -7,7 +7,7 @@ This module handles saving and loading user preferences.
 import json
 import os
 from pathlib import Path
-from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION
+from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS
 
 
 def get_settings_path():
@@ -34,7 +34,8 @@ def load_settings():
             "sound_enabled": SOUND_ENABLED,
             "sound_volume": SOUND_VOLUME,
             "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
-            "ui_scale": UI_SCALE
+            "ui_scale": UI_SCALE,
+            "use_champion_icons": USE_CHAMPION_ICONS
         }
 
     try:
@@ -52,6 +53,8 @@ def load_settings():
                 settings["sound_alert_threshold"] = SOUND_ALERT_THRESHOLD
             if "ui_scale" not in settings:
                 settings["ui_scale"] = UI_SCALE
+            if "use_champion_icons" not in settings:
+                settings["use_champion_icons"] = USE_CHAMPION_ICONS
             return settings
     except (json.JSONDecodeError, IOError):
         return {
@@ -61,11 +64,12 @@ def load_settings():
             "sound_enabled": SOUND_ENABLED,
             "sound_volume": SOUND_VOLUME,
             "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
-            "ui_scale": UI_SCALE
+            "ui_scale": UI_SCALE,
+            "use_champion_icons": USE_CHAMPION_ICONS
         }
 
 
-def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None):
+def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None):
     """Save user settings to JSON file."""
     settings_file = get_settings_path()
     current_settings = load_settings()
@@ -82,6 +86,8 @@ def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_
         current_settings["sound_alert_threshold"] = sound_alert_threshold
     if ui_scale is not None:
         current_settings["ui_scale"] = ui_scale
+    if use_champion_icons is not None:
+        current_settings["use_champion_icons"] = use_champion_icons
 
     try:
         with open(settings_file, 'w', encoding='utf-8') as f:

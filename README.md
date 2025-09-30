@@ -135,7 +135,8 @@ League-of-Legends-Spell-Tracker/
 └── data/                               # Game data
     ├── champions_ult_cooldowns.json    # Ultimate cooldowns
     ├── summoner_spells_cooldowns.json  # Summoner spell cooldowns
-    ├── champion_icons/                 # Champion icons (171 files)
+    ├── champion_icons/                 # Champion portrait icons (171 files)
+    ├── champion_ult_icons/             # Ultimate ability icons (171 files)
     ├── summoner spells/                # Summoner spell icons (10 files)
     ├── ult_ready.wav                   # Sound effect
     └── logo.ico                        # Application icon
@@ -148,6 +149,7 @@ League-of-Legends-Spell-Tracker/
 Click the **Settings button** in the menu bar to configure:
 
 - **Sound Enabled** - Toggle sound notifications on/off
+- **Use champion icons** - Switch between champion portraits and ultimate ability icons
 - **Sound Volume** - Adjust volume (0.0 - 1.0)
 - **Alert Threshold** - Set when to play sound (seconds before ready)
 - **UI Scale** - Scale interface size (0.5x - 2.0x)

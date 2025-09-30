@@ -8,7 +8,7 @@ and provides utilities for accessing champion icons.
 import json
 import os
 from typing import Dict, List, Optional
-from config import CHAMPIONS_DATA_PATH, ICONS_DIR, SUMMONER_SPELLS_DATA_PATH, SUMMONER_SPELLS_DIR, DEBUG_MODE, DEBUG_COOLDOWN
+from config import CHAMPIONS_DATA_PATH, CHAMPION_ULT_ICONS_DIR, CHAMPION_ICONS_DIR, SUMMONER_SPELLS_DATA_PATH, SUMMONER_SPELLS_DIR, DEBUG_MODE, DEBUG_COOLDOWN
 
 
 class ChampionData:
@@ -22,6 +22,7 @@ class ChampionData:
     def __init__(self):
         self.cooldowns: Dict[str, List[float]] = {}
         self.champions: List[str] = []
+        self.use_champion_icons = False
         self._load_data()
 
     def _load_data(self):
@@ -53,6 +54,9 @@ class ChampionData:
             return [DEBUG_COOLDOWN, DEBUG_COOLDOWN, DEBUG_COOLDOWN]
         return self.cooldowns.get(champion)
 
+    def set_icon_type(self, use_champion_icons: bool):
+        self.use_champion_icons = use_champion_icons
+
     def get_icon_path(self, champion: str) -> Optional[str]:
         icon_name = champion.replace(" ", "").replace("'", "").replace(".", "")
 
@@ -79,14 +83,27 @@ class ChampionData:
         }
 
         icon_filename = icon_mapping.get(icon_name, icon_name)
-        icon_path = os.path.join(ICONS_DIR, f"{icon_filename}_r.png")
 
-        if os.path.exists(icon_path):
-            return icon_path
+        if self.use_champion_icons:
+            icons_dir = CHAMPION_ICONS_DIR
+            icon_path = os.path.join(icons_dir, f"{icon_filename}.png")
 
-        icon_path_alt = os.path.join(ICONS_DIR, f"{champion.replace(' ', '')}_r.png")
-        if os.path.exists(icon_path_alt):
-            return icon_path_alt
+            if os.path.exists(icon_path):
+                return icon_path
+
+            icon_path_alt = os.path.join(icons_dir, f"{champion.replace(' ', '')}.png")
+            if os.path.exists(icon_path_alt):
+                return icon_path_alt
+        else:
+            icons_dir = CHAMPION_ULT_ICONS_DIR
+            icon_path = os.path.join(icons_dir, f"{icon_filename}_r.png")
+
+            if os.path.exists(icon_path):
+                return icon_path
+
+            icon_path_alt = os.path.join(icons_dir, f"{champion.replace(' ', '')}_r.png")
+            if os.path.exists(icon_path_alt):
+                return icon_path_alt
 
         return None
 
