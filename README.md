@@ -2,6 +2,8 @@
 
 <div align="center">
 
+![App Screenshot](data/assets/app_logo.png)
+
 **Compact overlay for tracking enemy ultimate and summoner spell cooldowns in League of Legends**
 
 ![Python](https://img.shields.io/badge/python-3.13+-blue.svg)
@@ -27,6 +29,10 @@ Lightweight overlay application for tracking enemy ultimate and summoner spell c
 ### Tracking & Timers
 - 🎯 **5 enemy slots** - track opposing team's ultimates and summoner spells
 - ⏱️ **Accurate timers** - automatic cooldown selection based on level
+- 🧮 **Ability haste calculation** - real-time cooldown adjustments based on enemy items (90+ items tracked)
+  - **Ultimate haste** - tracks Malignance (+20 ult haste) and Experimental Hexplate (+30 ult haste)
+  - **Summoner haste** - tracks Ionian Boots of Lucidity (+12) and Cosmic Insight rune (+18)
+  - **Ability haste** - calculates from all enemy items for accurate ultimate cooldowns
 - 🖼️ **Visual icons** - all 171 champions with ultimate ability icons + summoner spells
 - 🔇 **Gray inactive icons** - champions below level 6 display grayed out (configurable)
 - 🔊 **Sound alerts** - customizable notifications when ultimates are ready
@@ -161,12 +167,14 @@ League-of-Legends-Spell-Tracker/
 │   ├── timer.py                        # Cooldown timer logic
 │   ├── auto_loader.py                  # Auto-load game data monitor
 │   ├── live_client_api.py              # Riot Live Client Data API
+│   ├── haste_calculator.py             # Ability haste calculations
 │   ├── config.py                       # Application settings
 │   └── settings.py                     # Settings persistence
 └── data/                               # Game data
     ├── game_data/                      # JSON data files
     │   ├── champions_ult_cooldowns.json
-    │   └── summoner_spells_cooldowns.json
+    │   ├── summoner_spells_cooldowns.json
+    │   └── items_haste.json            # Item ability haste data (90 items)
     ├── icons/                          # Icon assets
     │   ├── champions/                  # Champion portrait icons (171 files)
     │   ├── champion_ults/              # Ultimate ability icons (171 files)
@@ -174,7 +182,8 @@ League-of-Legends-Spell-Tracker/
     ├── sounds/                         # Audio files
     │   └── ult_ready.wav
     └── assets/                         # Application assets
-        └── logo.ico
+        ├── logo.ico
+        └── app_logo.png                # Application screenshot
 ```
 
 ## ⚙️ Configuration
@@ -250,9 +259,8 @@ Contributions are welcome! If you have suggestions or found a bug:
 - [x] Automatic champion loading from live games
 - [x] Real-time level detection and tracking
 - [x] Adjustable slot spacing
+- [x] Support for ability haste calculation
 - [ ] Theme customization (custom colors/fonts)
-- [ ] Export/import settings (share configurations)
-- [ ] Support for ability haste calculation
 
 ## 📄 License
 
