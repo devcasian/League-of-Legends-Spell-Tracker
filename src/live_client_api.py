@@ -142,21 +142,23 @@ class LiveClientAPI:
 
     def get_player_runes(self, summoner_name: str) -> List[int]:
         data = self.get_all_game_data()
-        if not data or "allPlayers" not in data:
+        if not data:
             return []
 
-        for player in data["allPlayers"]:
-            if player.get("summonerName") == summoner_name:
-                rune_ids = []
+        active_player = data.get("activePlayer", {})
+        active_summoner = active_player.get("summonerName")
 
-                full_runes = player.get("fullRunes", {})
-                general_runes = full_runes.get("generalRunes", [])
-                for rune in general_runes:
-                    rune_id = rune.get("id")
-                    if rune_id:
-                        rune_ids.append(rune_id)
+        if active_summoner == summoner_name:
+            rune_ids = []
 
-                return rune_ids
+            full_runes = active_player.get("fullRunes", {})
+            general_runes = full_runes.get("generalRunes", [])
+            for rune in general_runes:
+                rune_id = rune.get("id")
+                if rune_id:
+                    rune_ids.append(rune_id)
+
+            return rune_ids
 
         return []
 

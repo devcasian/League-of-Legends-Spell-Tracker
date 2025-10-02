@@ -96,15 +96,7 @@ class GameAutoLoader:
                 items = player.get("items", [])
                 item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
 
-                runes_data = player.get("runes", {})
-                rune_ids = []
-
-                full_runes = player.get("fullRunes", {})
-                general_runes = full_runes.get("generalRunes", [])
-                for rune in general_runes:
-                    rune_id = rune.get("id")
-                    if rune_id:
-                        rune_ids.append(rune_id)
+                rune_ids = self.api.get_player_runes(summoner_name)
 
                 summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
                 ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
@@ -146,15 +138,7 @@ class GameAutoLoader:
             items = player.get("items", [])
             item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
 
-            runes_data = player.get("runes", {})
-            rune_ids = []
-
-            full_runes = player.get("fullRunes", {})
-            general_runes = full_runes.get("generalRunes", [])
-            for rune in general_runes:
-                rune_id = rune.get("id")
-                if rune_id:
-                    rune_ids.append(rune_id)
+            rune_ids = self.api.get_player_runes(summoner_name)
 
             print(f"DEBUG RUNES for {summoner_name}: {rune_ids}")
 
