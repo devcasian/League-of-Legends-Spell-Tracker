@@ -6,7 +6,7 @@ ultimate cooldowns in League of Legends matches.
 """
 
 import tkinter as tk
-from PIL import Image, ImageTk, ImageDraw, ImageFont
+from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageEnhance
 import os
 import pygame
 import random
@@ -256,6 +256,7 @@ class ChampionSlot(tk.Frame):
         self.photo_image = None
         self.summoner_spell_slots = {}
         self.timer_was_used = False
+        self.ult_available = True
 
         self._create_widgets()
 
@@ -364,6 +365,12 @@ class ChampionSlot(tk.Frame):
 
         img = self.base_image.copy()
 
+        if not self.ult_available:
+            enhancer = ImageEnhance.Color(img)
+            img = enhancer.enhance(0.2)
+            overlay = Image.new('RGBA', img.size, (0, 0, 0, 180))
+            img = Image.alpha_composite(img, overlay)
+
         if not timer.is_ready():
             overlay = Image.new('RGBA', img.size, (0, 0, 0, 150))
             img = Image.alpha_composite(img, overlay)
@@ -405,6 +412,8 @@ class ChampionSlot(tk.Frame):
             self.canvas.itemconfig(self.canvas_image_id, image=self.photo_image)
 
     def _on_click(self, event):
+        if not self.ult_available:
+            return
         timer = self.timer_manager.get_timer(self.slot_id)
         if timer:
             if timer.is_ready():
@@ -448,6 +457,13 @@ class ChampionSlot(tk.Frame):
         else:
             self.name_label.pack_forget()
 
+    def set_ult_availability(self, available: bool):
+        if not self.app.gray_low_level_icons:
+            self.ult_available = True
+        else:
+            self.ult_available = available
+        self.update_timer_display()
+
     def _on_double_click(self, event):
         if self.app.locked or self.app.auto_load_enabled:
             return
@@ -459,6 +475,13 @@ class ChampionSlot(tk.Frame):
             spell_slot.update_timer_display()
 
     def _update_border(self, timer):
+        if not self.ult_available:
+            self.canvas.config(
+                highlightthickness=2,
+                highlightbackground=EMPTY_SLOT_BORDER_COLOR
+            )
+            return
+
         if timer.is_ready():
             if self.timer_was_used:
                 self.canvas.config(
@@ -746,7 +769,7 @@ class SettingsDialog(tk.Toplevel):
         self.app = app
 
         self.title("Settings")
-        self.geometry("320x470")
+        self.geometry("320x510")
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
@@ -761,6 +784,7 @@ class SettingsDialog(tk.Toplevel):
         self.use_champion_icons_var = tk.BooleanVar(value=self.app.use_champion_icons)
         self.auto_load_enabled_var = tk.BooleanVar(value=self.app.auto_load_enabled)
         self.show_champion_names_var = tk.BooleanVar(value=self.app.show_champion_names)
+        self.gray_low_level_icons_var = tk.BooleanVar(value=self.app.gray_low_level_icons)
         self.current_volume = int(self.app.sound_volume * 100)
         self.current_alert_threshold = int(self.app.sound_alert_threshold)
         self.current_ui_scale = self.app.ui_scale
@@ -819,7 +843,20 @@ class SettingsDialog(tk.Toplevel):
             activeforeground=NAME_COLOR,
             font=("Arial", 10)
         )
-        show_names_check.pack(anchor=tk.W, pady=(0, 15))
+        show_names_check.pack(anchor=tk.W, pady=(0, 10))
+
+        gray_low_level_check = tk.Checkbutton(
+            main_frame,
+            text="Gray out icons below level 6",
+            variable=self.gray_low_level_icons_var,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            selectcolor=OVERLAY_BG_COLOR,
+            activebackground=OVERLAY_BG_COLOR,
+            activeforeground=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        gray_low_level_check.pack(anchor=tk.W, pady=(0, 15))
 
         volume_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
         volume_frame.pack(fill=tk.X, pady=(0, 5))
@@ -1097,6 +1134,8 @@ class SettingsDialog(tk.Toplevel):
         show_names_changed = self.app.show_champion_names != self.show_champion_names_var.get()
         self.app.show_champion_names = self.show_champion_names_var.get()
 
+        self.app.gray_low_level_icons = self.gray_low_level_icons_var.get()
+
         if self.app.ready_sound:
             self.app.ready_sound.set_volume(self.app.sound_volume)
 
@@ -1124,7 +1163,7 @@ class SettingsDialog(tk.Toplevel):
             for slot in self.app.slots.values():
                 slot._update_level_display()
 
-        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons, auto_load_enabled=self.app.auto_load_enabled, show_champion_names=self.app.show_champion_names)
+        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons, auto_load_enabled=self.app.auto_load_enabled, show_champion_names=self.app.show_champion_names, gray_low_level_icons=self.app.gray_low_level_icons)
         self.app.settings_dialog = None
         self.destroy()
 
@@ -1154,6 +1193,7 @@ class OverlayApp:
         self.use_champion_icons = settings.get("use_champion_icons", False)
         self.auto_load_enabled = settings.get("auto_load_enabled", AUTO_LOAD_ENABLED)
         self.show_champion_names = settings.get("show_champion_names", SHOW_CHAMPION_NAMES)
+        self.gray_low_level_icons = settings.get("gray_low_level_icons", GRAY_LOW_LEVEL_ICONS)
 
         apply_ui_scale(self.ui_scale)
         champion_data.set_icon_type(self.use_champion_icons)
@@ -1463,7 +1503,7 @@ class OverlayApp:
     def _toggle_layout(self):
         global LAYOUT
         LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
-        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
+        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
 
         slot_states = {}
         for slot_id, slot in self.slots.items():
@@ -1590,7 +1630,7 @@ class OverlayApp:
 
     def _toggle_lock(self):
         self.locked = not self.locked
-        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
+        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
         self._draw_lock_icon(self.lock_canvas)
 
     def _setup_auto_loader(self):
@@ -1626,10 +1666,16 @@ class OverlayApp:
         for i, level_data in enumerate(levels_data[:NUM_SLOTS]):
             ult_level = level_data.get("level", 0)
             if i in self.slots:
+                slot = self.slots[i]
                 timer = self.timer_manager.get_timer(i)
-                if timer and timer.level != ult_level:
-                    self.timer_manager.set_level(i, ult_level)
-                    self.slots[i]._update_level_display()
+                if timer:
+                    if ult_level == -1:
+                        slot.set_ult_availability(False)
+                    else:
+                        slot.set_ult_availability(True)
+                        if timer.level != ult_level:
+                            self.timer_manager.set_level(i, ult_level)
+                            slot._update_level_display()
 
     def _populate_from_game_data(self, enemy_team_data):
         print(f"Auto-loading {len(enemy_team_data)} champions from game...")
@@ -1644,8 +1690,12 @@ class OverlayApp:
                 slot = self.slots[i]
                 slot.set_champion(champion)
 
-                self.timer_manager.set_level(i, ult_level)
-                slot._update_level_display()
+                if ult_level == -1:
+                    slot.set_ult_availability(False)
+                else:
+                    slot.set_ult_availability(True)
+                    self.timer_manager.set_level(i, ult_level)
+                    slot._update_level_display()
 
                 if spell1 and 0 in slot.summoner_spell_slots:
                     slot.summoner_spell_slots[0].set_spell(spell1)
@@ -1730,7 +1780,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
 
     def _setup_tray_icon(self):
         logo_path = get_resource_path("data/assets/logo.ico")
@@ -1766,7 +1816,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
         if self.auto_loader:
             self.auto_loader.stop()
         if self.tray_icon:

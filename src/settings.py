@@ -7,7 +7,7 @@ This module handles saving and loading user preferences.
 import json
 import os
 from pathlib import Path
-from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS, AUTO_LOAD_ENABLED, SHOW_CHAMPION_NAMES
+from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS, AUTO_LOAD_ENABLED, SHOW_CHAMPION_NAMES, GRAY_LOW_LEVEL_ICONS
 
 
 def get_settings_path():
@@ -37,7 +37,8 @@ def load_settings():
             "ui_scale": UI_SCALE,
             "use_champion_icons": USE_CHAMPION_ICONS,
             "auto_load_enabled": AUTO_LOAD_ENABLED,
-            "show_champion_names": SHOW_CHAMPION_NAMES
+            "show_champion_names": SHOW_CHAMPION_NAMES,
+            "gray_low_level_icons": GRAY_LOW_LEVEL_ICONS
         }
 
     try:
@@ -61,6 +62,8 @@ def load_settings():
                 settings["auto_load_enabled"] = AUTO_LOAD_ENABLED
             if "show_champion_names" not in settings:
                 settings["show_champion_names"] = SHOW_CHAMPION_NAMES
+            if "gray_low_level_icons" not in settings:
+                settings["gray_low_level_icons"] = GRAY_LOW_LEVEL_ICONS
             return settings
     except (json.JSONDecodeError, IOError):
         return {
@@ -73,11 +76,12 @@ def load_settings():
             "ui_scale": UI_SCALE,
             "use_champion_icons": USE_CHAMPION_ICONS,
             "auto_load_enabled": AUTO_LOAD_ENABLED,
-            "show_champion_names": SHOW_CHAMPION_NAMES
+            "show_champion_names": SHOW_CHAMPION_NAMES,
+            "gray_low_level_icons": GRAY_LOW_LEVEL_ICONS
         }
 
 
-def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None, auto_load_enabled=None, show_champion_names=None):
+def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None, auto_load_enabled=None, show_champion_names=None, gray_low_level_icons=None):
     """Save user settings to JSON file."""
     settings_file = get_settings_path()
     current_settings = load_settings()
@@ -100,6 +104,8 @@ def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_
         current_settings["auto_load_enabled"] = auto_load_enabled
     if show_champion_names is not None:
         current_settings["show_champion_names"] = show_champion_names
+    if gray_low_level_icons is not None:
+        current_settings["gray_low_level_icons"] = gray_low_level_icons
 
     try:
         with open(settings_file, 'w', encoding='utf-8') as f:

@@ -128,8 +128,10 @@ class GameAutoLoader:
             return 2
         elif player_level >= 11:
             return 1
-        else:
+        elif player_level >= 6:
             return 0
+        else:
+            return -1
 
     def _normalize_spell_name(self, display_name: str) -> str:
         spell_mapping = {
