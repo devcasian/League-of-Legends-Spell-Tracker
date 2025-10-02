@@ -14,6 +14,23 @@
 
 ---
 
+## ⚠️ IMPORTANT NOTICE
+
+**As of January 2025, Riot Games has updated their Third-Party Application policies and explicitly prohibited third-party spell tracking tools.** Using this application in live games may result in account suspension or permanent ban.
+
+**This project is provided for educational purposes only** to demonstrate:
+- Working with Riot's Live Client Data API
+- Building overlay applications with Python and tkinter
+- Real-time data processing and game state monitoring
+- Ability haste calculations and League of Legends game mechanics
+- UI/UX design for gaming overlays
+
+**The maintainers are not responsible for any consequences of using this tool in violation of Riot's Terms of Service.**
+
+Reference: [Riot Games Third-Party Application Policy Update](https://developer.riotgames.com/docs/lol#game-client-api_third-party-applications)
+
+---
+
 ## 📋 Description
 
 Lightweight overlay application for tracking enemy ultimate and summoner spell cooldowns in League of Legends. Features automatic champion loading from live games, intelligent level detection, and real-time cooldown tracking to help you make better decisions during matches.
