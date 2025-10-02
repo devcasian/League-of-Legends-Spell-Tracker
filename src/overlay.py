@@ -214,7 +214,7 @@ class SummonerSpellSlot(tk.Frame):
                 self.timer_manager.reset_summoner_spell_timer(self.slot_id, self.spell_slot)
 
     def _on_double_click(self, event):
-        if self.app.locked:
+        if self.app.locked or self.app.auto_load_enabled:
             return
         if self.on_double_click_callback:
             self.on_double_click_callback(self.slot_id, self.spell_slot)
@@ -414,6 +414,8 @@ class ChampionSlot(tk.Frame):
                 self.timer_manager.reset_timer(self.slot_id)
 
     def _on_right_click(self, event):
+        if self.app.auto_load_enabled:
+            return
         timer = self.timer_manager.get_timer(self.slot_id)
         if timer:
             self.timer_manager.increment_level(self.slot_id)
@@ -439,11 +441,15 @@ class ChampionSlot(tk.Frame):
         return f"{display_name} ({level})"
 
     def _update_level_display(self):
-        display_name = self._get_display_name_with_level()
-        self.name_label.config(text=display_name)
+        if self.app.show_champion_names:
+            display_name = self._get_display_name_with_level()
+            self.name_label.config(text=display_name)
+            self.name_label.pack()
+        else:
+            self.name_label.pack_forget()
 
     def _on_double_click(self, event):
-        if self.app.locked:
+        if self.app.locked or self.app.auto_load_enabled:
             return
         if hasattr(self, 'on_double_click_callback') and self.on_double_click_callback:
             self.on_double_click_callback(self.slot_id)
@@ -740,7 +746,7 @@ class SettingsDialog(tk.Toplevel):
         self.app = app
 
         self.title("Settings")
-        self.geometry("320x410")
+        self.geometry("320x470")
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
@@ -754,6 +760,7 @@ class SettingsDialog(tk.Toplevel):
         self.sound_enabled_var = tk.BooleanVar(value=self.app.sound_enabled)
         self.use_champion_icons_var = tk.BooleanVar(value=self.app.use_champion_icons)
         self.auto_load_enabled_var = tk.BooleanVar(value=self.app.auto_load_enabled)
+        self.show_champion_names_var = tk.BooleanVar(value=self.app.show_champion_names)
         self.current_volume = int(self.app.sound_volume * 100)
         self.current_alert_threshold = int(self.app.sound_alert_threshold)
         self.current_ui_scale = self.app.ui_scale
@@ -799,7 +806,20 @@ class SettingsDialog(tk.Toplevel):
             activeforeground=NAME_COLOR,
             font=("Arial", 10)
         )
-        auto_load_check.pack(anchor=tk.W, pady=(0, 15))
+        auto_load_check.pack(anchor=tk.W, pady=(0, 10))
+
+        show_names_check = tk.Checkbutton(
+            main_frame,
+            text="Show champion names and levels",
+            variable=self.show_champion_names_var,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            selectcolor=OVERLAY_BG_COLOR,
+            activebackground=OVERLAY_BG_COLOR,
+            activeforeground=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        show_names_check.pack(anchor=tk.W, pady=(0, 15))
 
         volume_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
         volume_frame.pack(fill=tk.X, pady=(0, 5))
@@ -1074,6 +1094,9 @@ class SettingsDialog(tk.Toplevel):
         auto_load_changed = self.app.auto_load_enabled != self.auto_load_enabled_var.get()
         self.app.auto_load_enabled = self.auto_load_enabled_var.get()
 
+        show_names_changed = self.app.show_champion_names != self.show_champion_names_var.get()
+        self.app.show_champion_names = self.show_champion_names_var.get()
+
         if self.app.ready_sound:
             self.app.ready_sound.set_volume(self.app.sound_volume)
 
@@ -1097,7 +1120,11 @@ class SettingsDialog(tk.Toplevel):
                     self.app.auto_loader = None
                 self.app.game_connected = False
 
-        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons, auto_load_enabled=self.app.auto_load_enabled)
+        if show_names_changed:
+            for slot in self.app.slots.values():
+                slot._update_level_display()
+
+        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons, auto_load_enabled=self.app.auto_load_enabled, show_champion_names=self.app.show_champion_names)
         self.app.settings_dialog = None
         self.destroy()
 
@@ -1126,6 +1153,7 @@ class OverlayApp:
         self.ui_scale = settings.get("ui_scale", UI_SCALE)
         self.use_champion_icons = settings.get("use_champion_icons", False)
         self.auto_load_enabled = settings.get("auto_load_enabled", AUTO_LOAD_ENABLED)
+        self.show_champion_names = settings.get("show_champion_names", SHOW_CHAMPION_NAMES)
 
         apply_ui_scale(self.ui_scale)
         champion_data.set_icon_type(self.use_champion_icons)
@@ -1435,7 +1463,7 @@ class OverlayApp:
     def _toggle_layout(self):
         global LAYOUT
         LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
-        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled)
+        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
 
         slot_states = {}
         for slot_id, slot in self.slots.items():
@@ -1562,7 +1590,7 @@ class OverlayApp:
 
     def _toggle_lock(self):
         self.locked = not self.locked
-        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled)
+        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
         self._draw_lock_icon(self.lock_canvas)
 
     def _setup_auto_loader(self):
@@ -1702,7 +1730,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
 
     def _setup_tray_icon(self):
         logo_path = get_resource_path("data/assets/logo.ico")
@@ -1738,7 +1766,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names)
         if self.auto_loader:
             self.auto_loader.stop()
         if self.tray_icon:

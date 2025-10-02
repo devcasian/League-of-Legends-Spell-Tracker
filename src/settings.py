@@ -7,7 +7,7 @@ This module handles saving and loading user preferences.
 import json
 import os
 from pathlib import Path
-from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS, AUTO_LOAD_ENABLED
+from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS, AUTO_LOAD_ENABLED, SHOW_CHAMPION_NAMES
 
 
 def get_settings_path():
@@ -36,7 +36,8 @@ def load_settings():
             "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
             "ui_scale": UI_SCALE,
             "use_champion_icons": USE_CHAMPION_ICONS,
-            "auto_load_enabled": AUTO_LOAD_ENABLED
+            "auto_load_enabled": AUTO_LOAD_ENABLED,
+            "show_champion_names": SHOW_CHAMPION_NAMES
         }
 
     try:
@@ -58,6 +59,8 @@ def load_settings():
                 settings["use_champion_icons"] = USE_CHAMPION_ICONS
             if "auto_load_enabled" not in settings:
                 settings["auto_load_enabled"] = AUTO_LOAD_ENABLED
+            if "show_champion_names" not in settings:
+                settings["show_champion_names"] = SHOW_CHAMPION_NAMES
             return settings
     except (json.JSONDecodeError, IOError):
         return {
@@ -69,11 +72,12 @@ def load_settings():
             "sound_alert_threshold": SOUND_ALERT_THRESHOLD,
             "ui_scale": UI_SCALE,
             "use_champion_icons": USE_CHAMPION_ICONS,
-            "auto_load_enabled": AUTO_LOAD_ENABLED
+            "auto_load_enabled": AUTO_LOAD_ENABLED,
+            "show_champion_names": SHOW_CHAMPION_NAMES
         }
 
 
-def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None, auto_load_enabled=None):
+def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None, auto_load_enabled=None, show_champion_names=None):
     """Save user settings to JSON file."""
     settings_file = get_settings_path()
     current_settings = load_settings()
@@ -94,6 +98,8 @@ def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_
         current_settings["use_champion_icons"] = use_champion_icons
     if auto_load_enabled is not None:
         current_settings["auto_load_enabled"] = auto_load_enabled
+    if show_champion_names is not None:
+        current_settings["show_champion_names"] = show_champion_names
 
     try:
         with open(settings_file, 'w', encoding='utf-8') as f:
