@@ -14,23 +14,37 @@
 
 ## 📋 Description
 
-Lightweight overlay application for tracking enemy ultimate and summoner spell cooldowns in League of Legends. Helps monitor important enemy abilities and make better decisions during matches.
+Lightweight overlay application for tracking enemy ultimate and summoner spell cooldowns in League of Legends. Features automatic champion loading from live games, intelligent level detection, and real-time cooldown tracking to help you make better decisions during matches.
 
 ## ✨ Features
 
+### Auto-Load & Intelligence
+- 🎮 **Auto-load from game** - automatically detects enemy champions when entering a match (uses Riot Live Client Data API)
+- 🧠 **Smart level detection** - tracks enemy champion levels in real-time and adjusts ultimate cooldowns (6/11/16)
+- 📊 **Role-based sorting** - enemy champions auto-arrange by position (TOP→JUNGLE→MID→ADC→SUPPORT)
+- 🔄 **Auto-clear** - resets all icons when game ends
+
+### Tracking & Timers
 - 🎯 **5 enemy slots** - track opposing team's ultimates and summoner spells
-- ⏱️ **Accurate timers** - automatic cooldown selection based on level (6/11/16)
+- ⏱️ **Accurate timers** - automatic cooldown selection based on level
 - 🖼️ **Visual icons** - all 171 champions with ultimate ability icons + summoner spells
+- 🔇 **Gray inactive icons** - champions below level 6 display grayed out (configurable)
 - 🔊 **Sound alerts** - customizable notifications when ultimates are ready
+
+### Interface & Customization
 - 🎨 **Compact design** - minimalist interface with scalable UI (0.5x-2.0x)
+- 📏 **Adjustable spacing** - customize distance between champion icons (0-20px)
+- 🏷️ **Champion names** - optional display of champion names and levels
 - 🎨 **Visual effects** - color-coded borders (red=active, green=ready)
+- 🔄 **Layout toggle** - switch between horizontal and vertical layouts
 - 🔍 **Semi-transparent** - doesn't block game view
 - 🔝 **Always on top** - window stays visible over the game
+
+### Controls & Settings
 - 🖱️ **Drag & Drop** - move the window anywhere on screen
 - 🔒 **Lock mode** - prevent accidental changes during gameplay
 - 📍 **System tray** - minimize to tray and quick exit
-- ⚙️ **Settings dialog** - configure sound, volume, alerts, and UI scale
-- 🔄 **Layout toggle** - switch between horizontal and vertical layouts
+- ⚙️ **Settings dialog** - configure all features (sound, icons, auto-load, spacing, etc.)
 
 ## 🚀 Quick Start
 
@@ -76,15 +90,29 @@ python build.py
 
 ## 🎮 Usage
 
-### Champion Slots
+### Automatic Mode (Recommended)
 
+When **Auto-load from game** is enabled (default):
+
+1. **Start a League of Legends match**
+2. **Enemy champions auto-load** when game starts (sorted by role)
+3. **Levels auto-update** every 3 seconds during the game
+4. **Icons auto-clear** when game ends
+5. **Manual editing disabled** - right-click level changes and double-click champion selection are locked
+
+The overlay automatically connects to Riot's Live Client Data API (https://127.0.0.1:2999) to fetch real-time game data.
+
+### Manual Mode
+
+When auto-load is disabled, you can manually configure each slot:
+
+#### Champion Slots
 - **Double-click (LMB)** on champion icon → Open champion selection window
 - **Left-click (LMB)** → Start/reset ultimate timer
 - **Right-click (RMB)** → Cycle ultimate level (6 → 11 → 16)
   - Current level is displayed in champion name (e.g., "Lux (6)", "Ahri (11)")
 
-### Summoner Spell Slots
-
+#### Summoner Spell Slots
 - **Double-click (LMB)** on summoner spell icon → Open spell selection window
 - **Left-click (LMB)** → Start/reset spell timer
 
@@ -93,7 +121,7 @@ python build.py
 - **Layout toggle** - Switch between horizontal/vertical layouts
 - **Pin button** - Save current window position
 - **Lock button** - Lock overlay (prevents window movement and champion changes)
-- **Settings** - Open settings dialog (sound, volume, alert threshold, UI scale)
+- **Settings** - Open settings dialog (sound, volume, alert threshold, UI scale, auto-load, etc.)
 - **Close (X)** - Exit application
 
 ### System Tray
@@ -111,6 +139,7 @@ python build.py
 - **Red border** - Timer is active (ability on cooldown)
 - **Green border** - Ability is ready (after first use)
 - **Gray border** - Empty slot
+- **Grayed icon** - Champion below level 6 (ultimate not available yet)
 
 ## 🗂️ Project Structure
 
@@ -130,6 +159,8 @@ League-of-Legends-Spell-Tracker/
 │   ├── overlay.py                      # Main GUI application
 │   ├── champion_data.py                # Champion data loader
 │   ├── timer.py                        # Cooldown timer logic
+│   ├── auto_loader.py                  # Auto-load game data monitor
+│   ├── live_client_api.py              # Riot Live Client Data API
 │   ├── config.py                       # Application settings
 │   └── settings.py                     # Settings persistence
 └── data/                               # Game data
@@ -152,11 +183,20 @@ League-of-Legends-Spell-Tracker/
 
 Click the **Settings button** in the menu bar to configure:
 
+#### Sound & Alerts
 - **Sound Enabled** - Toggle sound notifications on/off
-- **Use champion icons** - Switch between champion portraits and ultimate ability icons
 - **Sound Volume** - Adjust volume (0.0 - 1.0)
 - **Alert Threshold** - Set when to play sound (seconds before ready)
+
+#### Visual Options
+- **Use champion icons** - Switch between champion portraits and ultimate ability icons
 - **UI Scale** - Scale interface size (0.5x - 2.0x)
+- **Slot Spacing** - Adjust distance between champion icons (0-20px)
+
+#### Auto-Load Options
+- **Auto-load from game** - Automatically detect enemy champions from live games
+- **Show champion names** - Display champion names and levels below icons
+- **Gray out icons below level 6** - Show inactive/grayed icons for champions without ultimate
 
 Settings are automatically saved to:
 - **Windows**: `%APPDATA%\SpellTracker\settings.json`
@@ -169,6 +209,7 @@ This means you can move the .exe anywhere and your settings will persist!
 Edit `src/config.py` to customize:
 
 ```python
+# Window & Visual Settings
 OVERLAY_ALPHA = 0.95                # Window transparency
 ICON_SIZE = 64                      # Base icon size (before scaling)
 OVERLAY_BG_COLOR = "#0a0a0a"        # Background color
@@ -176,6 +217,18 @@ TIMER_COLOR = "#ffffff"             # Timer text color
 READY_BORDER_COLOR = "#27ae60"      # Ready state color (green)
 ACTIVE_BORDER_COLOR = "#e74c3c"     # Active timer color (red)
 TIMER_FONT = ("Arial", 18, "bold")  # Timer font
+
+# Auto-Load Settings
+AUTO_LOAD_ENABLED = True            # Enable auto-load by default
+AUTO_LOAD_POLL_INTERVAL = 3.0       # API polling interval (seconds)
+SHOW_CHAMPION_NAMES = False         # Show champion names by default
+GRAY_LOW_LEVEL_ICONS = True         # Gray out low-level champions
+
+# UI Defaults
+DEFAULT_SLOT_SPACING = 2            # Default spacing between icons
+UI_SCALE = 1.1                      # Default UI scale
+
+# Debug
 DEBUG_MODE = False                  # Debug mode (shorter cooldowns)
 ```
 
@@ -194,8 +247,12 @@ Contributions are welcome! If you have suggestions or found a bug:
 - [x] Sound notifications when ultimate is ready
 - [x] Support for summoner spells
 - [x] Compact mode (level displayed in champion name)
+- [x] Automatic champion loading from live games
+- [x] Real-time level detection and tracking
+- [x] Adjustable slot spacing
 - [ ] Theme customization (custom colors/fonts)
 - [ ] Export/import settings (share configurations)
+- [ ] Support for ability haste calculation
 
 ## 📄 License
 
