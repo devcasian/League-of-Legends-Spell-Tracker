@@ -117,12 +117,14 @@ class LiveClientAPI:
 
     def get_player_stats(self, summoner_name: str) -> Optional[Dict[str, Any]]:
         data = self.get_all_game_data()
-        if not data or "allPlayers" not in data:
+        if not data:
             return None
 
-        for player in data["allPlayers"]:
-            if player.get("summonerName") == summoner_name:
-                return player.get("championStats", {})
+        active_player = data.get("activePlayer", {})
+        active_summoner = active_player.get("summonerName")
+
+        if active_summoner == summoner_name:
+            return active_player.get("championStats", {})
 
         return None
 
