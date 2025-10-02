@@ -80,17 +80,19 @@ class GameAutoLoader:
     def _handle_level_update(self):
         enemy_team = self.api.get_enemy_team()
         if enemy_team and self.on_level_update:
+            sorted_enemy_team = self._sort_by_position(enemy_team)
             levels_data = []
-            for player in enemy_team:
+            for player in sorted_enemy_team:
                 player_level = player.get("level", 1)
                 ult_level_index = self._get_ult_level_index(player_level)
                 levels_data.append({"level": ult_level_index})
             self.on_level_update(levels_data)
 
     def _parse_enemy_team(self, enemy_team: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        sorted_enemy_team = self._sort_by_position(enemy_team)
         parsed = []
 
-        for player in enemy_team:
+        for player in sorted_enemy_team:
             champion_name_raw = player.get("championName", "")
             champion_name = self._normalize_champion_name(champion_name_raw)
             player_level = player.get("level", 1)
@@ -112,6 +114,25 @@ class GameAutoLoader:
             })
 
         return parsed
+
+    def _sort_by_position(self, team: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        position_order = {
+            "TOP": 0,
+            "JUNGLE": 1,
+            "MIDDLE": 2,
+            "MID": 2,
+            "BOTTOM": 3,
+            "BOT": 3,
+            "ADC": 3,
+            "UTILITY": 4,
+            "SUPPORT": 4
+        }
+
+        def get_position_priority(player: Dict[str, Any]) -> int:
+            position = player.get("position", "").upper()
+            return position_order.get(position, 999)
+
+        return sorted(team, key=get_position_priority)
 
     def _normalize_champion_name(self, api_name: str) -> str:
         all_champions = champion_data.get_champion_list()
