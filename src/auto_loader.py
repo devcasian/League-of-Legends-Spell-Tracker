@@ -85,10 +85,13 @@ class GameAutoLoader:
             levels_data = []
             for player in sorted_players:
                 player_level = player.get("level", 1)
+                summoner_name = player.get("summonerName", "")
                 ult_level_index = self._get_ult_level_index(player_level)
 
-                champion_stats = player.get("championStats", {})
-                ability_haste = champion_stats.get("abilityHaste", 0.0)
+                champion_stats = self.api.get_player_stats(summoner_name)
+                ability_haste = 0.0
+                if champion_stats:
+                    ability_haste = champion_stats.get("abilityHaste", 0.0)
 
                 items = player.get("items", [])
                 item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
@@ -131,8 +134,10 @@ class GameAutoLoader:
 
             ult_level_index = self._get_ult_level_index(player_level)
 
-            champion_stats = player.get("championStats", {})
-            ability_haste = champion_stats.get("abilityHaste", 0.0)
+            champion_stats = self.api.get_player_stats(summoner_name)
+            ability_haste = 0.0
+            if champion_stats:
+                ability_haste = champion_stats.get("abilityHaste", 0.0)
 
             items = player.get("items", [])
             item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
