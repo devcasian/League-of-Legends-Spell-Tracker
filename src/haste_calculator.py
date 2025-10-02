@@ -45,16 +45,16 @@ def calculate_summoner_spell_haste(items: List[int], runes: List[int]) -> int:
 
 def calculate_ultimate_haste(ability_haste: float, items: List[int]) -> int:
     """
-    Calculate total ultimate ability haste.
+    Calculate additional ultimate ability haste from items only.
 
     Args:
-        ability_haste: Base ability haste from champion stats
+        ability_haste: Base ability haste from champion stats (not used, for future)
         items: List of item IDs
 
     Returns:
-        Total ultimate ability haste value
+        Additional ultimate ability haste value from items
     """
-    total_haste = int(ability_haste)
+    total_haste = 0
 
     if EXPERIMENTAL_HEXPLATE_ID in items:
         total_haste += EXPERIMENTAL_HEXPLATE_ULTIMATE_HASTE
