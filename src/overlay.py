@@ -22,7 +22,7 @@ from settings import load_settings, save_settings
 from auto_loader import GameAutoLoader
 
 
-def apply_ui_scale(scale):
+def apply_ui_scale(scale, slot_spacing=None):
     """Apply UI scale to all size-related constants."""
     global ICON_SIZE, SUMMONER_SPELL_SIZE, SLOT_SPACING, SUMMONER_SPELL_SPACING
     global EMPTY_SLOT_BORDER_WIDTH, LAYOUT_TOGGLE_SIZE, PIN_BUTTON_SIZE, LOCK_BUTTON_SIZE, SETTINGS_BUTTON_SIZE, CLOSE_BUTTON_SIZE
@@ -30,7 +30,12 @@ def apply_ui_scale(scale):
 
     ICON_SIZE = int(64 * scale)
     SUMMONER_SPELL_SIZE = int(30 * scale)
-    SLOT_SPACING = int(5 * scale)
+
+    if slot_spacing is not None:
+        SLOT_SPACING = int(slot_spacing * scale)
+    else:
+        SLOT_SPACING = int(5 * scale)
+
     SUMMONER_SPELL_SPACING = int(2 * scale)
     EMPTY_SLOT_BORDER_WIDTH = max(1, int(1 * scale))
 
@@ -813,7 +818,7 @@ class SettingsDialog(tk.Toplevel):
         self.app = app
 
         self.title("Settings")
-        self.geometry("320x510")
+        self.geometry("320x600")
         self.attributes("-topmost", True)
         self.resizable(False, False)
         self.configure(bg=OVERLAY_BG_COLOR)
@@ -832,6 +837,7 @@ class SettingsDialog(tk.Toplevel):
         self.current_volume = int(self.app.sound_volume * 100)
         self.current_alert_threshold = int(self.app.sound_alert_threshold)
         self.current_ui_scale = self.app.ui_scale
+        self.current_slot_spacing = int(self.app.slot_spacing)
 
         main_frame = tk.Frame(self, bg=OVERLAY_BG_COLOR, padx=20, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -1064,6 +1070,58 @@ class SettingsDialog(tk.Toplevel):
 
         self._update_slider_state()
 
+        slot_spacing_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        slot_spacing_frame.pack(fill=tk.X, pady=(0, 5))
+
+        tk.Label(
+            slot_spacing_frame,
+            text="Slot Spacing:",
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        ).pack(side=tk.LEFT)
+
+        self.spacing_label = tk.Label(
+            slot_spacing_frame,
+            text=f"{self.current_slot_spacing}px",
+            width=5,
+            bg=OVERLAY_BG_COLOR,
+            fg=NAME_COLOR,
+            font=("Arial", 10)
+        )
+        self.spacing_label.pack(side=tk.RIGHT)
+
+        spacing_buttons_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
+        spacing_buttons_frame.pack(fill=tk.X, pady=(0, 20))
+
+        tk.Button(
+            spacing_buttons_frame,
+            text="−",
+            command=self._decrease_spacing,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            activebackground="#3a3a3a",
+            activeforeground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 12),
+            cursor="hand2",
+            width=3
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        tk.Button(
+            spacing_buttons_frame,
+            text="+",
+            command=self._increase_spacing,
+            bg="#2a2a2a",
+            fg=NAME_COLOR,
+            activebackground="#3a3a3a",
+            activeforeground=NAME_COLOR,
+            relief=tk.FLAT,
+            font=("Arial", 12),
+            cursor="hand2",
+            width=3
+        ).pack(side=tk.LEFT)
+
         btn_frame = tk.Frame(main_frame, bg=OVERLAY_BG_COLOR)
         btn_frame.pack(fill=tk.X)
 
@@ -1159,6 +1217,32 @@ class SettingsDialog(tk.Toplevel):
         self.app._apply_scale_change()
         self.app.root.after(50, lambda: self.app._open_settings((x, y)))
 
+    def _decrease_spacing(self):
+        new_spacing = self.current_slot_spacing - SLOT_SPACING_STEP
+        if new_spacing >= SLOT_SPACING_MIN:
+            self.current_slot_spacing = new_spacing
+            self.spacing_label.config(text=f"{self.current_slot_spacing}px")
+            self.app.slot_spacing = self.current_slot_spacing
+
+            x = self.winfo_x()
+            y = self.winfo_y()
+            self.destroy()
+            self.app._apply_scale_change()
+            self.app.root.after(50, lambda: self.app._open_settings((x, y)))
+
+    def _increase_spacing(self):
+        new_spacing = self.current_slot_spacing + SLOT_SPACING_STEP
+        if new_spacing <= SLOT_SPACING_MAX:
+            self.current_slot_spacing = new_spacing
+            self.spacing_label.config(text=f"{self.current_slot_spacing}px")
+            self.app.slot_spacing = self.current_slot_spacing
+
+            x = self.winfo_x()
+            y = self.winfo_y()
+            self.destroy()
+            self.app._apply_scale_change()
+            self.app.root.after(50, lambda: self.app._open_settings((x, y)))
+
     def _on_close(self):
         self.app.settings_dialog = None
         self.destroy()
@@ -1168,6 +1252,7 @@ class SettingsDialog(tk.Toplevel):
         self.app.sound_volume = self.current_volume / 100.0
         self.app.sound_alert_threshold = self.current_alert_threshold
         self.app.ui_scale = self.current_ui_scale
+        self.app.slot_spacing = self.current_slot_spacing
 
         icon_type_changed = self.app.use_champion_icons != self.use_champion_icons_var.get()
         self.app.use_champion_icons = self.use_champion_icons_var.get()
@@ -1207,7 +1292,7 @@ class SettingsDialog(tk.Toplevel):
             for slot in self.app.slots.values():
                 slot._update_level_display()
 
-        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons, auto_load_enabled=self.app.auto_load_enabled, show_champion_names=self.app.show_champion_names, gray_low_level_icons=self.app.gray_low_level_icons)
+        save_settings(LAYOUT, sound_enabled=self.app.sound_enabled, sound_volume=self.app.sound_volume, sound_alert_threshold=self.app.sound_alert_threshold, ui_scale=self.app.ui_scale, use_champion_icons=self.app.use_champion_icons, auto_load_enabled=self.app.auto_load_enabled, show_champion_names=self.app.show_champion_names, gray_low_level_icons=self.app.gray_low_level_icons, slot_spacing=self.app.slot_spacing)
         self.app.settings_dialog = None
         self.destroy()
 
@@ -1234,12 +1319,13 @@ class OverlayApp:
         self.sound_volume = settings.get("sound_volume", SOUND_VOLUME)
         self.sound_alert_threshold = settings.get("sound_alert_threshold", SOUND_ALERT_THRESHOLD)
         self.ui_scale = settings.get("ui_scale", UI_SCALE)
+        self.slot_spacing = settings.get("slot_spacing", DEFAULT_SLOT_SPACING)
         self.use_champion_icons = settings.get("use_champion_icons", False)
         self.auto_load_enabled = settings.get("auto_load_enabled", AUTO_LOAD_ENABLED)
         self.show_champion_names = settings.get("show_champion_names", SHOW_CHAMPION_NAMES)
         self.gray_low_level_icons = settings.get("gray_low_level_icons", GRAY_LOW_LEVEL_ICONS)
 
-        apply_ui_scale(self.ui_scale)
+        apply_ui_scale(self.ui_scale, self.slot_spacing)
         champion_data.set_icon_type(self.use_champion_icons)
 
         pygame.mixer.init()
@@ -1547,7 +1633,7 @@ class OverlayApp:
     def _toggle_layout(self):
         global LAYOUT
         LAYOUT = "horizontal" if LAYOUT == "vertical" else "vertical"
-        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
+        save_settings(LAYOUT, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons, slot_spacing=self.slot_spacing)
 
         slot_states = {}
         for slot_id, slot in self.slots.items():
@@ -1640,7 +1726,7 @@ class OverlayApp:
 
             slot_states[slot_id] = slot_state
 
-        apply_ui_scale(self.ui_scale)
+        apply_ui_scale(self.ui_scale, self.slot_spacing)
 
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -1674,7 +1760,7 @@ class OverlayApp:
 
     def _toggle_lock(self):
         self.locked = not self.locked
-        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
+        save_settings(LAYOUT, locked=self.locked, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons, slot_spacing=self.slot_spacing)
         self._draw_lock_icon(self.lock_canvas)
 
     def _setup_auto_loader(self):
@@ -1826,7 +1912,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons, slot_spacing=self.slot_spacing)
 
     def _setup_tray_icon(self):
         logo_path = get_resource_path("data/assets/logo.ico")
@@ -1862,7 +1948,7 @@ class OverlayApp:
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         position = {"x": x, "y": y}
-        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons)
+        save_settings(LAYOUT, position, sound_enabled=self.sound_enabled, sound_volume=self.sound_volume, sound_alert_threshold=self.sound_alert_threshold, ui_scale=self.ui_scale, use_champion_icons=self.use_champion_icons, auto_load_enabled=self.auto_load_enabled, show_champion_names=self.show_champion_names, gray_low_level_icons=self.gray_low_level_icons, slot_spacing=self.slot_spacing)
         if self.auto_loader:
             self.auto_loader.stop()
         if self.tray_icon:

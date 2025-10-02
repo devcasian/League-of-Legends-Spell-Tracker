@@ -7,7 +7,7 @@ This module handles saving and loading user preferences.
 import json
 import os
 from pathlib import Path
-from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS, AUTO_LOAD_ENABLED, SHOW_CHAMPION_NAMES, GRAY_LOW_LEVEL_ICONS
+from config import LAYOUT, SOUND_ENABLED, SOUND_VOLUME, SOUND_ALERT_THRESHOLD, UI_SCALE, DEFAULT_LOCKED, DEFAULT_POSITION, USE_CHAMPION_ICONS, AUTO_LOAD_ENABLED, SHOW_CHAMPION_NAMES, GRAY_LOW_LEVEL_ICONS, DEFAULT_SLOT_SPACING
 
 
 def get_settings_path():
@@ -38,7 +38,8 @@ def load_settings():
             "use_champion_icons": USE_CHAMPION_ICONS,
             "auto_load_enabled": AUTO_LOAD_ENABLED,
             "show_champion_names": SHOW_CHAMPION_NAMES,
-            "gray_low_level_icons": GRAY_LOW_LEVEL_ICONS
+            "gray_low_level_icons": GRAY_LOW_LEVEL_ICONS,
+            "slot_spacing": DEFAULT_SLOT_SPACING
         }
 
     try:
@@ -64,6 +65,8 @@ def load_settings():
                 settings["show_champion_names"] = SHOW_CHAMPION_NAMES
             if "gray_low_level_icons" not in settings:
                 settings["gray_low_level_icons"] = GRAY_LOW_LEVEL_ICONS
+            if "slot_spacing" not in settings:
+                settings["slot_spacing"] = DEFAULT_SLOT_SPACING
             return settings
     except (json.JSONDecodeError, IOError):
         return {
@@ -77,11 +80,12 @@ def load_settings():
             "use_champion_icons": USE_CHAMPION_ICONS,
             "auto_load_enabled": AUTO_LOAD_ENABLED,
             "show_champion_names": SHOW_CHAMPION_NAMES,
-            "gray_low_level_icons": GRAY_LOW_LEVEL_ICONS
+            "gray_low_level_icons": GRAY_LOW_LEVEL_ICONS,
+            "slot_spacing": DEFAULT_SLOT_SPACING
         }
 
 
-def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None, auto_load_enabled=None, show_champion_names=None, gray_low_level_icons=None):
+def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_volume=None, sound_alert_threshold=None, ui_scale=None, use_champion_icons=None, auto_load_enabled=None, show_champion_names=None, gray_low_level_icons=None, slot_spacing=None):
     """Save user settings to JSON file."""
     settings_file = get_settings_path()
     current_settings = load_settings()
@@ -106,6 +110,8 @@ def save_settings(layout, position=None, locked=None, sound_enabled=None, sound_
         current_settings["show_champion_names"] = show_champion_names
     if gray_low_level_icons is not None:
         current_settings["gray_low_level_icons"] = gray_low_level_icons
+    if slot_spacing is not None:
+        current_settings["slot_spacing"] = slot_spacing
 
     try:
         with open(settings_file, 'w', encoding='utf-8') as f:
