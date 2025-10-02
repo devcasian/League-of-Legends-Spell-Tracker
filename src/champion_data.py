@@ -58,34 +58,21 @@ class ChampionData:
         self.use_champion_icons = use_champion_icons
 
     def get_icon_path(self, champion: str) -> Optional[str]:
-        icon_name = champion.replace(" ", "").replace("'", "").replace(".", "")
+        icon_name = champion.replace(" ", "").replace("'", "").replace(".", "").replace("&", "")
 
-        icon_mapping = {
-            "AurelionSol": "AurelionSol",
-            "BelVeth": "BelVeth",
-            "ChoGath": "ChoGath",
-            "DrMundo": "DrMundo",
-            "JarvanIV": "JarvanIV",
-            "KSante": "KSante",
-            "KaiSa": "KaiSa",
-            "KhaZix": "KhaZix",
-            "KogMaw": "KogMaw",
-            "LeeSin": "LeeSin",
-            "MasterYi": "MasterYi",
-            "MissFortune": "MissFortune",
-            "NunuWillump": "NunuWillump",
-            "RekSai": "RekSai",
-            "RenataGlasc": "RenataGlasc",
-            "TahmKench": "TahmKench",
-            "TwistedFate": "TwistedFate",
-            "VelKoz": "VelKoz",
-            "XinZhao": "XinZhao",
+        champion_icon_mapping = {
+            "NunuWillump": "Nunu",
+            "RenataGlasc": "Renata",
+            "Wukong": "MonkeyKing",
         }
 
-        icon_filename = icon_mapping.get(icon_name, icon_name)
+        ult_icon_mapping = {
+            "NunuWillump": "Nunu&Willump",
+        }
 
         if self.use_champion_icons:
             icons_dir = CHAMPION_ICONS_DIR
+            icon_filename = champion_icon_mapping.get(icon_name, icon_name)
             icon_path = os.path.join(icons_dir, f"{icon_filename}.png")
 
             if os.path.exists(icon_path):
@@ -96,6 +83,7 @@ class ChampionData:
                 return icon_path_alt
         else:
             icons_dir = CHAMPION_ULT_ICONS_DIR
+            icon_filename = ult_icon_mapping.get(icon_name, icon_name)
             icon_path = os.path.join(icons_dir, f"{icon_filename}_r.png")
 
             if os.path.exists(icon_path):
