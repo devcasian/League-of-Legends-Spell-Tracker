@@ -147,20 +147,14 @@ class LiveClientAPI:
 
         for player in data["allPlayers"]:
             if player.get("summonerName") == summoner_name:
-                runes_data = player.get("runes", {})
                 rune_ids = []
 
-                keystone = runes_data.get("keystone", {})
-                if keystone and keystone.get("id"):
-                    rune_ids.append(keystone.get("id"))
-
-                primary_tree = runes_data.get("primaryRuneTree", {})
-                if primary_tree and primary_tree.get("id"):
-                    rune_ids.append(primary_tree.get("id"))
-
-                secondary_tree = runes_data.get("secondaryRuneTree", {})
-                if secondary_tree and secondary_tree.get("id"):
-                    rune_ids.append(secondary_tree.get("id"))
+                full_runes = player.get("fullRunes", {})
+                general_runes = full_runes.get("generalRunes", [])
+                for rune in general_runes:
+                    rune_id = rune.get("id")
+                    if rune_id:
+                        rune_ids.append(rune_id)
 
                 return rune_ids
 

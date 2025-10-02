@@ -98,9 +98,13 @@ class GameAutoLoader:
 
                 runes_data = player.get("runes", {})
                 rune_ids = []
-                keystone = runes_data.get("keystone", {})
-                if keystone and keystone.get("id"):
-                    rune_ids.append(keystone.get("id"))
+
+                full_runes = player.get("fullRunes", {})
+                general_runes = full_runes.get("generalRunes", [])
+                for rune in general_runes:
+                    rune_id = rune.get("id")
+                    if rune_id:
+                        rune_ids.append(rune_id)
 
                 summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
                 ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
@@ -145,11 +149,14 @@ class GameAutoLoader:
             runes_data = player.get("runes", {})
             rune_ids = []
 
-            print(f"DEBUG RUNES for {summoner_name}: {runes_data}")
+            full_runes = player.get("fullRunes", {})
+            general_runes = full_runes.get("generalRunes", [])
+            for rune in general_runes:
+                rune_id = rune.get("id")
+                if rune_id:
+                    rune_ids.append(rune_id)
 
-            keystone = runes_data.get("keystone", {})
-            if keystone and keystone.get("id"):
-                rune_ids.append(keystone.get("id"))
+            print(f"DEBUG RUNES for {summoner_name}: {rune_ids}")
 
             summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
             ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
