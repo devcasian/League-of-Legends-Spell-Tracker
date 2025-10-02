@@ -115,6 +115,7 @@ class SummonerSpellSlot(tk.Frame):
         self.photo_image = None
         self.on_double_click_callback = None
         self.timer_was_used = False
+        self.summoner_haste = 0
 
         self.canvas = tk.Canvas(
             self,
@@ -148,8 +149,9 @@ class SummonerSpellSlot(tk.Frame):
 
         self.timer_manager.remove_summoner_spell_timer(self.slot_id, self.spell_slot)
 
-    def set_spell(self, spell_name: str):
+    def set_spell(self, spell_name: str, summoner_haste: int = 0):
         self.spell = spell_name
+        self.summoner_haste = summoner_haste
 
         icon_path = summoner_spell_data.get_icon_path(spell_name)
         if icon_path and os.path.exists(icon_path):
@@ -172,7 +174,7 @@ class SummonerSpellSlot(tk.Frame):
 
         cooldown = summoner_spell_data.get_cooldown(spell_name)
         if cooldown:
-            self.timer_manager.create_summoner_spell_timer(self.slot_id, self.spell_slot, spell_name, cooldown)
+            self.timer_manager.create_summoner_spell_timer(self.slot_id, self.spell_slot, spell_name, cooldown, self.summoner_haste)
 
     def update_timer_display(self):
         if not self.base_image:
@@ -279,6 +281,8 @@ class ChampionSlot(tk.Frame):
         self.summoner_spell_slots = {}
         self.timer_was_used = False
         self.ult_available = True
+        self.ability_haste = 0
+        self.ultimate_haste = 0
 
         self._create_widgets()
 
@@ -398,7 +402,7 @@ class ChampionSlot(tk.Frame):
 
         cooldowns = champion_data.get_all_cooldowns(champion_name)
         if cooldowns:
-            self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns, on_ready_callback=self.app._play_ready_sound, alert_threshold=self.app.sound_alert_threshold)
+            self.timer_manager.create_timer(self.slot_id, champion_name, cooldowns, on_ready_callback=self.app._play_ready_sound, alert_threshold=self.app.sound_alert_threshold, ability_haste=self.ability_haste, ultimate_haste=self.ultimate_haste)
 
         self._update_level_display()
 
@@ -1797,6 +1801,10 @@ class OverlayApp:
     def _update_levels(self, levels_data):
         for i, level_data in enumerate(levels_data[:NUM_SLOTS]):
             ult_level = level_data.get("level", 0)
+            summoner_haste = level_data.get("summoner_haste", 0)
+            ability_haste = level_data.get("ability_haste", 0)
+            ultimate_haste = level_data.get("ultimate_haste", 0)
+
             if i in self.slots:
                 slot = self.slots[i]
                 timer = self.timer_manager.get_timer(i)
@@ -1809,6 +1817,17 @@ class OverlayApp:
                             self.timer_manager.set_level(i, ult_level)
                             slot._update_level_display()
 
+                        if timer.ability_haste != ability_haste or timer.ultimate_haste != ultimate_haste:
+                            timer.ability_haste = ability_haste
+                            timer.ultimate_haste = ultimate_haste
+
+                for spell_slot_idx in [0, 1]:
+                    if spell_slot_idx in slot.summoner_spell_slots:
+                        spell_slot = slot.summoner_spell_slots[spell_slot_idx]
+                        spell_timer = self.timer_manager.get_summoner_spell_timer(i, spell_slot_idx)
+                        if spell_timer and spell_timer.summoner_haste != summoner_haste:
+                            spell_timer.summoner_haste = summoner_haste
+
     def _populate_from_game_data(self, enemy_team_data):
         print(f"Auto-loading {len(enemy_team_data)} champions from game...")
 
@@ -1817,9 +1836,14 @@ class OverlayApp:
             spell1 = player_data.get("spell1")
             spell2 = player_data.get("spell2")
             ult_level = player_data.get("level", 0)
+            summoner_haste = player_data.get("summoner_haste", 0)
+            ability_haste = player_data.get("ability_haste", 0)
+            ultimate_haste = player_data.get("ultimate_haste", 0)
 
             if champion and i in self.slots:
                 slot = self.slots[i]
+                slot.ability_haste = ability_haste
+                slot.ultimate_haste = ultimate_haste
                 slot.set_champion(champion)
 
                 if ult_level == -1:
@@ -1830,12 +1854,12 @@ class OverlayApp:
                     slot._update_level_display()
 
                 if spell1 and 0 in slot.summoner_spell_slots:
-                    slot.summoner_spell_slots[0].set_spell(spell1)
+                    slot.summoner_spell_slots[0].set_spell(spell1, summoner_haste)
 
                 if spell2 and 1 in slot.summoner_spell_slots:
-                    slot.summoner_spell_slots[1].set_spell(spell2)
+                    slot.summoner_spell_slots[1].set_spell(spell2, summoner_haste)
 
-                print(f"Loaded slot {i}: {champion} lvl{ult_level} ({spell1}/{spell2})")
+                print(f"Loaded slot {i}: {champion} lvl{ult_level} ({spell1}/{spell2}) [AH:{ability_haste} UH:{ultimate_haste} SH:{summoner_haste}]")
 
     def _setup_drag_and_drop(self):
         self.dragging = False

@@ -10,6 +10,7 @@ import time
 from typing import Callable, Optional, List, Dict, Any
 from live_client_api import LiveClientAPI
 from champion_data import champion_data
+from haste_calculator import calculate_summoner_spell_haste, calculate_ultimate_haste
 
 
 class GameAutoLoader:
@@ -63,11 +64,11 @@ class GameAutoLoader:
 
     def _handle_game_start(self):
         self.game_active = True
-        print("Game detected - loading enemy team...")
+        print("Game detected - loading own player...")
 
-        enemy_team = self.api.get_enemy_team()
-        if enemy_team and self.on_game_start:
-            parsed_data = self._parse_enemy_team(enemy_team)
+        own_player = self.api.get_own_player()
+        if own_player and self.on_game_start:
+            parsed_data = self._parse_enemy_team(own_player)
             self.on_game_start(parsed_data)
 
     def _handle_game_end(self):
@@ -78,14 +79,35 @@ class GameAutoLoader:
             self.on_game_end()
 
     def _handle_level_update(self):
-        enemy_team = self.api.get_enemy_team()
-        if enemy_team and self.on_level_update:
-            sorted_enemy_team = self._sort_by_position(enemy_team)
+        own_player = self.api.get_own_player()
+        if own_player and self.on_level_update:
+            sorted_players = self._sort_by_position(own_player)
             levels_data = []
-            for player in sorted_enemy_team:
+            for player in sorted_players:
                 player_level = player.get("level", 1)
                 ult_level_index = self._get_ult_level_index(player_level)
-                levels_data.append({"level": ult_level_index})
+
+                champion_stats = player.get("championStats", {})
+                ability_haste = champion_stats.get("abilityHaste", 0.0)
+
+                items = player.get("items", [])
+                item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
+
+                runes_data = player.get("runes", {})
+                rune_ids = []
+                keystone = runes_data.get("keystone", {})
+                if keystone and keystone.get("id"):
+                    rune_ids.append(keystone.get("id"))
+
+                summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
+                ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
+
+                levels_data.append({
+                    "level": ult_level_index,
+                    "summoner_haste": summoner_haste,
+                    "ability_haste": int(ability_haste),
+                    "ultimate_haste": ultimate_haste
+                })
             self.on_level_update(levels_data)
 
     def _parse_enemy_team(self, enemy_team: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -96,6 +118,7 @@ class GameAutoLoader:
             champion_name_raw = player.get("championName", "")
             champion_name = self._normalize_champion_name(champion_name_raw)
             player_level = player.get("level", 1)
+            summoner_name = player.get("summonerName", "")
             summoner_spells = player.get("summonerSpells", {})
 
             spell1_name = summoner_spells.get("summonerSpellOne", {}).get("displayName", "")
@@ -106,11 +129,29 @@ class GameAutoLoader:
 
             ult_level_index = self._get_ult_level_index(player_level)
 
+            champion_stats = player.get("championStats", {})
+            ability_haste = champion_stats.get("abilityHaste", 0.0)
+
+            items = player.get("items", [])
+            item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
+
+            runes_data = player.get("runes", {})
+            rune_ids = []
+            keystone = runes_data.get("keystone", {})
+            if keystone and keystone.get("id"):
+                rune_ids.append(keystone.get("id"))
+
+            summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
+            ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
+
             parsed.append({
                 "champion": champion_name,
                 "spell1": spell1,
                 "spell2": spell2,
-                "level": ult_level_index
+                "level": ult_level_index,
+                "summoner_haste": summoner_haste,
+                "ability_haste": int(ability_haste),
+                "ultimate_haste": ultimate_haste
             })
 
         return parsed
@@ -190,9 +231,9 @@ class GameAutoLoader:
 
     def force_reload(self):
         if self.api.is_game_active():
-            enemy_team = self.api.get_enemy_team()
-            if enemy_team and self.on_game_start:
-                parsed_data = self._parse_enemy_team(enemy_team)
+            own_player = self.api.get_own_player()
+            if own_player and self.on_game_start:
+                parsed_data = self._parse_enemy_team(own_player)
                 self.on_game_start(parsed_data)
                 return True
         return False

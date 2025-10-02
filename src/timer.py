@@ -7,6 +7,7 @@ of champion ultimate abilities at different levels.
 
 import time
 from typing import Optional, Callable
+from haste_calculator import apply_haste
 
 
 class CooldownTimer:
@@ -17,7 +18,7 @@ class CooldownTimer:
     for a champion's ultimate ability.
     """
 
-    def __init__(self, champion: str, cooldowns: list[float], level: int = 0, on_ready_callback: Optional[Callable] = None, alert_threshold: int = 4):
+    def __init__(self, champion: str, cooldowns: list[float], level: int = 0, on_ready_callback: Optional[Callable] = None, alert_threshold: int = 4, ability_haste: int = 0, ultimate_haste: int = 0):
         self.champion = champion
         self.cooldowns = cooldowns
         self.level = level
@@ -27,6 +28,8 @@ class CooldownTimer:
         self.sound_played = False
         self.on_ready_callback = on_ready_callback
         self.alert_threshold = alert_threshold
+        self.ability_haste = ability_haste
+        self.ultimate_haste = ultimate_haste
 
     def start(self):
         if not self.is_active and self.cooldowns:
@@ -43,7 +46,9 @@ class CooldownTimer:
     def get_current_cooldown(self) -> float:
         if not self.cooldowns or self.level >= len(self.cooldowns):
             return 0.0
-        return self.cooldowns[self.level]
+        base_cd = self.cooldowns[self.level]
+        total_haste = self.ability_haste + self.ultimate_haste
+        return apply_haste(base_cd, total_haste)
 
     def get_remaining_time(self) -> float:
         if not self.is_active or self.start_time is None:
@@ -95,9 +100,10 @@ class SummonerSpellTimer:
     Tracks cooldown state and remaining time for a summoner spell.
     """
 
-    def __init__(self, spell: str, cooldown: float):
+    def __init__(self, spell: str, cooldown: float, summoner_haste: int = 0):
         self.spell = spell
         self.cooldown = cooldown
+        self.summoner_haste = summoner_haste
         self.start_time: Optional[float] = None
         self.is_active = False
 
@@ -115,7 +121,8 @@ class SummonerSpellTimer:
             return 0.0
 
         elapsed = time.time() - self.start_time
-        remaining = self.cooldown - elapsed
+        effective_cd = apply_haste(self.cooldown, self.summoner_haste)
+        remaining = effective_cd - elapsed
 
         if remaining <= 0:
             self.reset()
@@ -148,8 +155,8 @@ class TimerManager:
         self.summoner_spell_timers: dict[tuple[int, int], Optional[SummonerSpellTimer]] = {}
         self.update_callbacks: list[Callable] = []
 
-    def create_timer(self, slot: int, champion: str, cooldowns: list[float], level: int = 0, on_ready_callback: Optional[Callable] = None, alert_threshold: int = 4):
-        self.timers[slot] = CooldownTimer(champion, cooldowns, level, on_ready_callback, alert_threshold)
+    def create_timer(self, slot: int, champion: str, cooldowns: list[float], level: int = 0, on_ready_callback: Optional[Callable] = None, alert_threshold: int = 4, ability_haste: int = 0, ultimate_haste: int = 0):
+        self.timers[slot] = CooldownTimer(champion, cooldowns, level, on_ready_callback, alert_threshold, ability_haste, ultimate_haste)
 
     def remove_timer(self, slot: int):
         if slot in self.timers:
@@ -192,8 +199,8 @@ class TimerManager:
     def update(self):
         self._notify_update()
 
-    def create_summoner_spell_timer(self, slot: int, spell_slot: int, spell: str, cooldown: float):
-        self.summoner_spell_timers[(slot, spell_slot)] = SummonerSpellTimer(spell, cooldown)
+    def create_summoner_spell_timer(self, slot: int, spell_slot: int, spell: str, cooldown: float, summoner_haste: int = 0):
+        self.summoner_spell_timers[(slot, spell_slot)] = SummonerSpellTimer(spell, cooldown, summoner_haste)
 
     def remove_summoner_spell_timer(self, slot: int, spell_slot: int):
         key = (slot, spell_slot)

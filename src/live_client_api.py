@@ -95,5 +95,74 @@ class LiveClientAPI:
 
         return enemy_team
 
+    def get_own_player(self) -> List[Dict[str, Any]]:
+        players = self.get_all_players()
+        if not players:
+            return []
+
+        active_player_data = self.get_active_player()
+        if not active_player_data:
+            return []
+
+        active_summoner = active_player_data.get("summonerName")
+        if not active_summoner:
+            return []
+
+        own_player = [
+            player for player in players
+            if player.get("summonerName") == active_summoner
+        ]
+
+        return own_player
+
+    def get_player_stats(self, summoner_name: str) -> Optional[Dict[str, Any]]:
+        data = self.get_all_game_data()
+        if not data or "allPlayers" not in data:
+            return None
+
+        for player in data["allPlayers"]:
+            if player.get("summonerName") == summoner_name:
+                return player.get("championStats", {})
+
+        return None
+
+    def get_player_items(self, summoner_name: str) -> List[int]:
+        data = self.get_all_game_data()
+        if not data or "allPlayers" not in data:
+            return []
+
+        for player in data["allPlayers"]:
+            if player.get("summonerName") == summoner_name:
+                items = player.get("items", [])
+                return [item.get("itemID", 0) for item in items if item.get("itemID")]
+
+        return []
+
+    def get_player_runes(self, summoner_name: str) -> List[int]:
+        data = self.get_all_game_data()
+        if not data or "allPlayers" not in data:
+            return []
+
+        for player in data["allPlayers"]:
+            if player.get("summonerName") == summoner_name:
+                runes_data = player.get("runes", {})
+                rune_ids = []
+
+                keystone = runes_data.get("keystone", {})
+                if keystone and keystone.get("id"):
+                    rune_ids.append(keystone.get("id"))
+
+                primary_tree = runes_data.get("primaryRuneTree", {})
+                if primary_tree and primary_tree.get("id"):
+                    rune_ids.append(primary_tree.get("id"))
+
+                secondary_tree = runes_data.get("secondaryRuneTree", {})
+                if secondary_tree and secondary_tree.get("id"):
+                    rune_ids.append(secondary_tree.get("id"))
+
+                return rune_ids
+
+        return []
+
     def close(self):
         self.session.close()
