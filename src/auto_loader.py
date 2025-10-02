@@ -116,6 +116,11 @@ class GameAutoLoader:
         return parsed
 
     def _sort_by_position(self, team: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        has_positions = any(player.get("position", "").strip() for player in team)
+        if not has_positions:
+            print("⚠️ No position data available, skipping sort")
+            return team
+
         position_order = {
             "TOP": 0,
             "JUNGLE": 1,

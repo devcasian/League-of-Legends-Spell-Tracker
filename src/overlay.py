@@ -126,6 +126,23 @@ class SummonerSpellSlot(tk.Frame):
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<Double-Button-1>", self._on_double_click)
 
+    def clear(self):
+        self.spell = None
+        self.base_image = None
+        self.photo_image = None
+        self.timer_was_used = False
+
+        if self.canvas_image_id:
+            self.canvas.delete(self.canvas_image_id)
+            self.canvas_image_id = None
+
+        self.canvas.config(
+            highlightthickness=EMPTY_SLOT_BORDER_WIDTH,
+            highlightbackground=EMPTY_SLOT_BORDER_COLOR
+        )
+
+        self.timer_manager.remove_summoner_spell_timer(self.slot_id, self.spell_slot)
+
     def set_spell(self, spell_name: str):
         self.spell = spell_name
 
@@ -324,6 +341,33 @@ class ChampionSlot(tk.Frame):
     def on_summoner_spell_double_click(self, slot_id: int, spell_slot: int):
         if hasattr(self, 'on_summoner_spell_select_callback') and self.on_summoner_spell_select_callback:
             self.on_summoner_spell_select_callback(slot_id, spell_slot)
+
+    def clear(self):
+        self.champion = None
+        self.base_image = None
+        self.photo_image = None
+        self.timer_was_used = False
+        self.ult_available = True
+
+        if self.canvas_image_id:
+            self.canvas.delete(self.canvas_image_id)
+            self.canvas_image_id = None
+
+        self.canvas.config(
+            highlightthickness=EMPTY_SLOT_BORDER_WIDTH,
+            highlightbackground=EMPTY_SLOT_BORDER_COLOR
+        )
+
+        self.name_label.config(text="Empty")
+        if self.app.show_champion_names:
+            self.name_label.pack()
+        else:
+            self.name_label.pack_forget()
+
+        for spell_slot in self.summoner_spell_slots.values():
+            spell_slot.clear()
+
+        self.timer_manager.remove_timer(self.slot_id)
 
     def set_champion(self, champion_name: str):
         self.champion = champion_name
@@ -1651,13 +1695,15 @@ class OverlayApp:
 
     def _on_game_end(self):
         self.game_connected = False
-        self.root.after(0, self._update_game_status)
+        self.root.after(0, self._clear_all_slots)
 
     def _on_level_update(self, levels_data):
         self.root.after(0, lambda: self._update_levels(levels_data))
 
-    def _update_game_status(self):
-        pass
+    def _clear_all_slots(self):
+        print("Game ended - clearing all slots...")
+        for slot in self.slots.values():
+            slot.clear()
 
     def _update_game_status_and_load(self, enemy_team_data):
         self._populate_from_game_data(enemy_team_data)
