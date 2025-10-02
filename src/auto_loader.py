@@ -144,6 +144,9 @@ class GameAutoLoader:
 
             runes_data = player.get("runes", {})
             rune_ids = []
+
+            print(f"DEBUG RUNES for {summoner_name}: {runes_data}")
+
             keystone = runes_data.get("keystone", {})
             if keystone and keystone.get("id"):
                 rune_ids.append(keystone.get("id"))
