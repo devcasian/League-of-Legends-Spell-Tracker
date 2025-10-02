@@ -1572,7 +1572,8 @@ class OverlayApp:
         self.auto_loader = GameAutoLoader(poll_interval=AUTO_LOAD_POLL_INTERVAL)
         self.auto_loader.set_callbacks(
             on_game_start=self._on_game_start,
-            on_game_end=self._on_game_end
+            on_game_end=self._on_game_end,
+            on_level_update=self._on_level_update
         )
         self.auto_loader.start()
 
@@ -1584,11 +1585,23 @@ class OverlayApp:
         self.game_connected = False
         self.root.after(0, self._update_game_status)
 
+    def _on_level_update(self, levels_data):
+        self.root.after(0, lambda: self._update_levels(levels_data))
+
     def _update_game_status(self):
         pass
 
     def _update_game_status_and_load(self, enemy_team_data):
         self._populate_from_game_data(enemy_team_data)
+
+    def _update_levels(self, levels_data):
+        for i, level_data in enumerate(levels_data[:NUM_SLOTS]):
+            ult_level = level_data.get("level", 0)
+            if i in self.slots:
+                timer = self.timer_manager.get_timer(i)
+                if timer and timer.level != ult_level:
+                    self.timer_manager.set_level(i, ult_level)
+                    self.slots[i]._update_level_display()
 
     def _populate_from_game_data(self, enemy_team_data):
         print(f"Auto-loading {len(enemy_team_data)} champions from game...")
@@ -1597,10 +1610,14 @@ class OverlayApp:
             champion = player_data.get("champion")
             spell1 = player_data.get("spell1")
             spell2 = player_data.get("spell2")
+            ult_level = player_data.get("level", 0)
 
             if champion and i in self.slots:
                 slot = self.slots[i]
                 slot.set_champion(champion)
+
+                self.timer_manager.set_level(i, ult_level)
+                slot._update_level_display()
 
                 if spell1 and 0 in slot.summoner_spell_slots:
                     slot.summoner_spell_slots[0].set_spell(spell1)
@@ -1608,7 +1625,7 @@ class OverlayApp:
                 if spell2 and 1 in slot.summoner_spell_slots:
                     slot.summoner_spell_slots[1].set_spell(spell2)
 
-                print(f"Loaded slot {i}: {champion} ({spell1}/{spell2})")
+                print(f"Loaded slot {i}: {champion} lvl{ult_level} ({spell1}/{spell2})")
 
     def _setup_drag_and_drop(self):
         self.dragging = False

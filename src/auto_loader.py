@@ -27,6 +27,7 @@ class GameAutoLoader:
         self.thread: Optional[threading.Thread] = None
         self.on_game_start: Optional[Callable[[List[Dict[str, Any]]], None]] = None
         self.on_game_end: Optional[Callable[[], None]] = None
+        self.on_level_update: Optional[Callable[[List[Dict[str, Any]]], None]] = None
         self.game_active = False
 
     def start(self):
@@ -52,6 +53,8 @@ class GameAutoLoader:
                     self._handle_game_start()
                 elif not is_active and self.game_active:
                     self._handle_game_end()
+                elif is_active and self.game_active:
+                    self._handle_level_update()
 
                 time.sleep(self.poll_interval)
             except Exception as e:
@@ -74,12 +77,23 @@ class GameAutoLoader:
         if self.on_game_end:
             self.on_game_end()
 
+    def _handle_level_update(self):
+        enemy_team = self.api.get_enemy_team()
+        if enemy_team and self.on_level_update:
+            levels_data = []
+            for player in enemy_team:
+                player_level = player.get("level", 1)
+                ult_level_index = self._get_ult_level_index(player_level)
+                levels_data.append({"level": ult_level_index})
+            self.on_level_update(levels_data)
+
     def _parse_enemy_team(self, enemy_team: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         parsed = []
 
         for player in enemy_team:
             champion_name_raw = player.get("championName", "")
             champion_name = self._normalize_champion_name(champion_name_raw)
+            player_level = player.get("level", 1)
             summoner_spells = player.get("summonerSpells", {})
 
             spell1_name = summoner_spells.get("summonerSpellOne", {}).get("displayName", "")
@@ -88,10 +102,13 @@ class GameAutoLoader:
             spell1 = self._normalize_spell_name(spell1_name)
             spell2 = self._normalize_spell_name(spell2_name)
 
+            ult_level_index = self._get_ult_level_index(player_level)
+
             parsed.append({
                 "champion": champion_name,
                 "spell1": spell1,
-                "spell2": spell2
+                "spell2": spell2,
+                "level": ult_level_index
             })
 
         return parsed
@@ -106,6 +123,14 @@ class GameAutoLoader:
 
         return api_name
 
+    def _get_ult_level_index(self, player_level: int) -> int:
+        if player_level >= 16:
+            return 2
+        elif player_level >= 11:
+            return 1
+        else:
+            return 0
+
     def _normalize_spell_name(self, display_name: str) -> str:
         spell_mapping = {
             "Flash": "flash",
@@ -116,22 +141,24 @@ class GameAutoLoader:
             "Barrier": "barrier",
             "Exhaust": "exhaust",
             "Smite": "smite",
+            "Unleashed Smite": "smite",
+            "Primal Smite": "smite",
             "Ghost": "ghost",
             "Cleanse": "cleanse",
         }
 
-        normalized = spell_mapping.get(display_name, display_name.lower())
-        if normalized != display_name.lower():
-            print(f"Spell mapping: '{display_name}' -> '{normalized}'")
-        else:
-            print(f"Warning: Unknown spell '{display_name}', using '{normalized}'")
-        return normalized
+        result = spell_mapping.get(display_name, display_name.lower())
+        if display_name and display_name not in spell_mapping:
+            print(f"⚠️ Unknown spell from API: '{display_name}' (mapped to '{result}')")
+        return result
 
     def set_callbacks(self,
                      on_game_start: Optional[Callable[[List[Dict[str, Any]]], None]] = None,
-                     on_game_end: Optional[Callable[[], None]] = None):
+                     on_game_end: Optional[Callable[[], None]] = None,
+                     on_level_update: Optional[Callable[[List[Dict[str, Any]]], None]] = None):
         self.on_game_start = on_game_start
         self.on_game_end = on_game_end
+        self.on_level_update = on_level_update
 
     def force_reload(self):
         if self.api.is_game_active():
