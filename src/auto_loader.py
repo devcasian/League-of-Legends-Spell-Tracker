@@ -64,11 +64,11 @@ class GameAutoLoader:
 
     def _handle_game_start(self):
         self.game_active = True
-        print("Game detected - loading own player...")
+        print("Game detected - loading enemy team...")
 
-        own_player = self.api.get_own_player()
-        if own_player and self.on_game_start:
-            parsed_data = self._parse_enemy_team(own_player)
+        enemy_team = self.api.get_enemy_team()
+        if enemy_team and self.on_game_start:
+            parsed_data = self._parse_enemy_team(enemy_team)
             self.on_game_start(parsed_data)
 
     def _handle_game_end(self):
@@ -79,11 +79,11 @@ class GameAutoLoader:
             self.on_game_end()
 
     def _handle_level_update(self):
-        own_player = self.api.get_own_player()
-        if own_player and self.on_level_update:
-            sorted_players = self._sort_by_position(own_player)
+        enemy_team = self.api.get_enemy_team()
+        if enemy_team and self.on_level_update:
+            sorted_enemy_team = self._sort_by_position(enemy_team)
             levels_data = []
-            for player in sorted_players:
+            for player in sorted_enemy_team:
                 player_level = player.get("level", 1)
                 summoner_name = player.get("summonerName", "")
                 ult_level_index = self._get_ult_level_index(player_level)
@@ -234,9 +234,9 @@ class GameAutoLoader:
 
     def force_reload(self):
         if self.api.is_game_active():
-            own_player = self.api.get_own_player()
-            if own_player and self.on_game_start:
-                parsed_data = self._parse_enemy_team(own_player)
+            enemy_team = self.api.get_enemy_team()
+            if enemy_team and self.on_game_start:
+                parsed_data = self._parse_enemy_team(enemy_team)
                 self.on_game_start(parsed_data)
                 return True
         return False
