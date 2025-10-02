@@ -1818,15 +1818,14 @@ class OverlayApp:
                             slot._update_level_display()
 
                         if timer.ability_haste != ability_haste or timer.ultimate_haste != ultimate_haste:
-                            timer.ability_haste = ability_haste
-                            timer.ultimate_haste = ultimate_haste
+                            timer.update_haste(ability_haste, ultimate_haste)
 
                 for spell_slot_idx in [0, 1]:
                     if spell_slot_idx in slot.summoner_spell_slots:
                         spell_slot = slot.summoner_spell_slots[spell_slot_idx]
                         spell_timer = self.timer_manager.get_summoner_spell_timer(i, spell_slot_idx)
                         if spell_timer and spell_timer.summoner_haste != summoner_haste:
-                            spell_timer.summoner_haste = summoner_haste
+                            spell_timer.update_haste(summoner_haste)
 
     def _populate_from_game_data(self, enemy_team_data):
         print(f"Auto-loading {len(enemy_team_data)} champions from game...")

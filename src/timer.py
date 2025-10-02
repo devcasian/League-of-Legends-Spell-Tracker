@@ -79,6 +79,28 @@ class CooldownTimer:
     def increment_level(self):
         self.level = (self.level + 1) % min(3, len(self.cooldowns))
 
+    def update_haste(self, ability_haste: int, ultimate_haste: int):
+        if not self.is_active or self.start_time is None:
+            self.ability_haste = ability_haste
+            self.ultimate_haste = ultimate_haste
+            return
+
+        old_cooldown = self.get_current_cooldown()
+        if old_cooldown <= 0:
+            self.ability_haste = ability_haste
+            self.ultimate_haste = ultimate_haste
+            return
+
+        elapsed = time.time() - self.start_time
+        progress = elapsed / old_cooldown
+
+        self.ability_haste = ability_haste
+        self.ultimate_haste = ultimate_haste
+
+        new_cooldown = self.get_current_cooldown()
+        new_elapsed = new_cooldown * progress
+        self.start_time = time.time() - new_elapsed
+
     def format_time(self) -> str:
         if self.is_ready():
             return "Ready"
@@ -132,6 +154,25 @@ class SummonerSpellTimer:
 
     def is_ready(self) -> bool:
         return not self.is_active or self.get_remaining_time() <= 0
+
+    def update_haste(self, summoner_haste: int):
+        if not self.is_active or self.start_time is None:
+            self.summoner_haste = summoner_haste
+            return
+
+        old_cooldown = apply_haste(self.cooldown, self.summoner_haste)
+        if old_cooldown <= 0:
+            self.summoner_haste = summoner_haste
+            return
+
+        elapsed = time.time() - self.start_time
+        progress = elapsed / old_cooldown
+
+        self.summoner_haste = summoner_haste
+
+        new_cooldown = apply_haste(self.cooldown, self.summoner_haste)
+        new_elapsed = new_cooldown * progress
+        self.start_time = time.time() - new_elapsed
 
     def format_time(self) -> str:
         if self.is_ready():
