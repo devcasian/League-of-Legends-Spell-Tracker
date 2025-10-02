@@ -10,7 +10,7 @@ import time
 from typing import Callable, Optional, List, Dict, Any
 from live_client_api import LiveClientAPI
 from champion_data import champion_data
-from haste_calculator import calculate_summoner_spell_haste, calculate_ultimate_haste
+from haste_calculator import calculate_summoner_spell_haste, calculate_ability_haste_from_items, calculate_ultimate_haste_from_items
 
 
 class GameAutoLoader:
@@ -88,18 +88,21 @@ class GameAutoLoader:
                 summoner_name = player.get("summonerName", "")
                 ult_level_index = self._get_ult_level_index(player_level)
 
-                champion_stats = self.api.get_player_stats(summoner_name)
-                ability_haste = 0.0
-                if champion_stats:
-                    ability_haste = champion_stats.get("abilityHaste", 0.0)
-
                 items = player.get("items", [])
                 item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
+
+                champion_stats = self.api.get_player_stats(summoner_name)
+                base_ability_haste = 0.0
+                if champion_stats:
+                    base_ability_haste = champion_stats.get("abilityHaste", 0.0)
+
+                items_ability_haste = calculate_ability_haste_from_items(item_ids)
+                ability_haste = int(base_ability_haste) + items_ability_haste
 
                 rune_ids = self.api.get_player_runes(summoner_name)
 
                 summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
-                ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
+                ultimate_haste = calculate_ultimate_haste_from_items(item_ids)
 
                 print(f"DEBUG UPDATE: AH={ability_haste}, Items={item_ids}, UH={ultimate_haste}, SH={summoner_haste}")
 
@@ -130,20 +133,23 @@ class GameAutoLoader:
 
             ult_level_index = self._get_ult_level_index(player_level)
 
-            champion_stats = self.api.get_player_stats(summoner_name)
-            ability_haste = 0.0
-            if champion_stats:
-                ability_haste = champion_stats.get("abilityHaste", 0.0)
-
             items = player.get("items", [])
             item_ids = [item.get("itemID", 0) for item in items if item.get("itemID")]
+
+            champion_stats = self.api.get_player_stats(summoner_name)
+            base_ability_haste = 0.0
+            if champion_stats:
+                base_ability_haste = champion_stats.get("abilityHaste", 0.0)
+
+            items_ability_haste = calculate_ability_haste_from_items(item_ids)
+            ability_haste = int(base_ability_haste) + items_ability_haste
 
             rune_ids = self.api.get_player_runes(summoner_name)
 
             print(f"DEBUG RUNES for {summoner_name}: {rune_ids}")
 
             summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
-            ultimate_haste = calculate_ultimate_haste(ability_haste, item_ids)
+            ultimate_haste = calculate_ultimate_haste_from_items(item_ids)
 
             print(f"DEBUG {champion_name}: AH={ability_haste}, Items={item_ids}, UH={ultimate_haste}, SH={summoner_haste}")
 
