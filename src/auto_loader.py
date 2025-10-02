@@ -104,8 +104,6 @@ class GameAutoLoader:
                 summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
                 ultimate_haste = calculate_ultimate_haste_from_items(item_ids)
 
-                print(f"DEBUG UPDATE: AH={ability_haste}, Items={item_ids}, UH={ultimate_haste}, SH={summoner_haste}")
-
                 levels_data.append({
                     "level": ult_level_index,
                     "summoner_haste": summoner_haste,
@@ -146,12 +144,8 @@ class GameAutoLoader:
 
             rune_ids = self.api.get_player_runes(summoner_name)
 
-            print(f"DEBUG RUNES for {summoner_name}: {rune_ids}")
-
             summoner_haste = calculate_summoner_spell_haste(item_ids, rune_ids)
             ultimate_haste = calculate_ultimate_haste_from_items(item_ids)
-
-            print(f"DEBUG {champion_name}: AH={ability_haste}, Items={item_ids}, UH={ultimate_haste}, SH={summoner_haste}")
 
             parsed.append({
                 "champion": champion_name,

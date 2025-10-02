@@ -49,8 +49,6 @@ class CooldownTimer:
         base_cd = self.cooldowns[self.level]
         total_haste = self.ability_haste + self.ultimate_haste
         effective_cd = apply_haste(base_cd, total_haste)
-        if total_haste > 0:
-            print(f"DEBUG CD: base={base_cd}, AH={self.ability_haste}, UH={self.ultimate_haste}, total={total_haste}, effective={effective_cd:.1f}")
         return effective_cd
 
     def get_remaining_time(self) -> float:
